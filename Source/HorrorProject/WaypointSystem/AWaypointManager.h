@@ -4,33 +4,31 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "WaypointPath.generated.h"
+#include "Datatable/NPCWaypointStruct.h"
+#include "AWaypointManager.generated.h"
 
 USTRUCT(Atomic, BlueprintType)
-struct FWaypointInfo
+struct FWaypointInfo2
 {
 	GENERATED_USTRUCT_BODY()
 
 public:
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float MinWaitSecond;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float MaxWaitSecond;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float Speed;
 };
 
-
-
-
 UCLASS()
-class HORRORPROJECT_API AWaypointPath : public AActor
+class HORRORPROJECT_API AAWaypointManager : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
-	AWaypointPath();
+	AAWaypointManager();
 
 protected:
 	// Called when the game starts or when spawned
@@ -43,8 +41,6 @@ public:
 	FORCEINLINE void SetCurrentWaypoint(int32 InWaypoint) { currentWaypoint = InWaypoint; }
 	FORCEINLINE int GetCurrentWaypoint() const { return currentWaypoint; }
 
-
-
 public:
 	// 에디터에서 프로퍼티가 변경되었을 때 호출될 함수입니다.
 #if WITH_EDITOR
@@ -54,11 +50,11 @@ public:
 protected:
 	//웨이포인트에 도착했을때의 함수명
 	UFUNCTION()
-	void ArrivedOnWaypoint();
-	// WaypointInfo 을 업데이트하는 함수입니다.
+	void ArrivedOnHGWaypoint();
+	// WaypointInfo 을 업데이트하는 함수.
 	void UpdateWaypointInfo();
 	//다음 웨이포인트로 이동하는 함수
-	void MoveToNextWaypoint();
+	//void MoveToNextWaypoint();
 
 private:
 	UPROPERTY(EditAnywhere, Category = Path, meta = (AllowPrivateAccess = "true"))
@@ -67,14 +63,21 @@ private:
 	UPROPERTY()
 	TObjectPtr<class AHGCharacterEnemy> Target;
 
-	UPROPERTY(EditAnywhere, Category=Path, meta = (AllowPrivateAccess = "true", DisplayName = "BP_Waypoint"))
+	UPROPERTY(EditAnywhere, Category = Path, meta = (AllowPrivateAccess = "true", DisplayName = "BP_Waypoint"))
 	TArray<TObjectPtr<class AWaypoint>> Path;
 
-	UPROPERTY(VisibleAnywhere, Category=Path)
-	TArray<FWaypointInfo> WaypointInfo;
+	UPROPERTY(VisibleAnywhere, Category = Path)
+	TArray<FWaypointInfo2> WaypointInfo;
 
 	UPROPERTY(VisibleInstanceOnly, Category = Path)
 	int32 currentWaypoint;
 
 	FTimerHandle PathHandle;
+
+	UPROPERTY()
+	TArray<float> NPCWaypointWaitTime;
+
+	UPROPERTY()
+	UDataTable* NPCWaypointDataTable;
+
 };

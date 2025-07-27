@@ -34,7 +34,7 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	FORCEINLINE void SetState(EStateEnemy InState);
+	void SetState(EStateEnemy InState);
 	FORCEINLINE EStateEnemy GetState() { return CurrentState; }
 
 	void SetWalkSpeed(float InSpeed);

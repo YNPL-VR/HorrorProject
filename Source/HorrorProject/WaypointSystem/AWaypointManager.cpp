@@ -28,8 +28,10 @@ AAWaypointManager::AAWaypointManager()
 void AAWaypointManager::BeginPlay()
 {
 	Super::BeginPlay();
+	
 	const FString ContextString(TEXT("ItemDataTable Context"));
 	FNPCWaypointStruct* NPCWaypointStruct = NPCWaypointDataTable->FindRow<FNPCWaypointStruct>(FName("Time"), ContextString);
+
 	NPCWaypointWaitTime.Add(NPCWaypointStruct->Waypoint0to1);
 	NPCWaypointWaitTime.Add(NPCWaypointStruct->Waypoint1to2);
 	NPCWaypointWaitTime.Add(NPCWaypointStruct->Waypoint2to3);
@@ -117,7 +119,39 @@ void AAWaypointManager::UpdateWaypointInfo()
 {
 	WaypointInfo.Empty();
 
-	for (const AWaypoint* Waypoint : Path)
+
+
+	{
+		/*
+		const FString ContextString(TEXT("ItemDataTable Context"));
+		FNPCWaypointStruct* NPCWaypointStruct = NPCWaypointDataTable->FindRow<FNPCWaypointStruct>(FName("Time"), ContextString);
+
+		if (Path.Num() > 0)
+		{
+			WaypointInfo.Reserve(Path.Num());
+			switch (Path.Num())
+			{
+			case 6:
+				WaypointInfo[5]=(NPCWaypointStruct->Waypoint5to6);
+			case 5:
+				WaypointInfo[4] = (NPCWaypointStruct->Waypoint4to5);
+			case 4:
+				WaypointInfo[3] = (NPCWaypointStruct->Waypoint3to4);
+			case 3:
+				WaypointInfo[2] = (NPCWaypointStruct->Waypoint2to3);
+			case 2:
+				WaypointInfo[1]= (NPCWaypointStruct->Waypoint1to2);
+			case 1:
+				WaypointInfo[0]= (NPCWaypointStruct->Waypoint0to1);
+			}
+		}*/
+
+		UE_LOG(LogTemp, Warning, TEXT("NPCWaypointObjectDataTable Succeed!"));
+	}
+
+	
+
+	/*for (const AWaypoint* Waypoint : Path)
 	{
 		if (Waypoint)
 		{
@@ -127,7 +161,7 @@ void AAWaypointManager::UpdateWaypointInfo()
 			WaypointStruct.Speed = Waypoint->GetSpeed();
 			WaypointInfo.Add(WaypointStruct);
 		}
-	}
+	}*/
 }
 
 //void AAWaypointManager::MoveToNextWaypoint()

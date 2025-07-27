@@ -29,10 +29,10 @@ public:
 	FORCEINLINE float GetSpeed() const { return Speed; }
 
 private:
-	UPROPERTY(EditAnywhere, Category = Path, Meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = Path, Meta = (AllowPrivateAccess = "true"))
 	float MinWaitSecond;
-	UPROPERTY(EditAnywhere, Category = Path, Meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = Path, Meta = (AllowPrivateAccess = "true"))
 	float MaxWaitSecond;
-	UPROPERTY(EditAnywhere, Category = Path, Meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = Path, Meta = (AllowPrivateAccess = "true"))
 	float Speed;
 };

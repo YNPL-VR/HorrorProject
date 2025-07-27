@@ -43,9 +43,9 @@ public:
 
 public:
 	// 에디터에서 프로퍼티가 변경되었을 때 호출될 함수입니다.
-#if WITH_EDITOR
-	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-#endif
+//#if WITH_EDITOR
+//	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+//#endif
 
 protected:
 	//웨이포인트에 도착했을때의 함수명

@@ -74,19 +74,19 @@ void AAWaypointManager::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-#if WITH_EDITOR
-void AAWaypointManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
-{
-	Super::PostEditChangeProperty(PropertyChangedEvent);
-
-	const FName PropertyName = (PropertyChangedEvent.Property != nullptr) ? PropertyChangedEvent.Property->GetFName() : NAME_None;
-	if (PropertyName == GET_MEMBER_NAME_CHECKED(AAWaypointManager, Path))
-	{
-		UpdateWaypointInfo();
-	}
-
-}
-#endif
+//#if WITH_EDITOR
+//void AAWaypointManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+//{
+//	Super::PostEditChangeProperty(PropertyChangedEvent);
+//
+//	const FName PropertyName = (PropertyChangedEvent.Property != nullptr) ? PropertyChangedEvent.Property->GetFName() : NAME_None;
+//	if (PropertyName == GET_MEMBER_NAME_CHECKED(AAWaypointManager, Path))
+//	{
+//		UpdateWaypointInfo();
+//	}
+//
+//}
+//#endif
 
 //Waypoint 에 도착했을 때 실행하는 함수
 void AAWaypointManager::ArrivedOnHGWaypoint()

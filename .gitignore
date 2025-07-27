@@ -57,11 +57,7 @@
 # Binary Files
 Binaries/*
 Plugins/*/Binaries/*
-<<<<<<< HEAD
-Content/StarterContent/HDRI/HDRI_Epic_Courtyard_Daylight.uasset
-=======
 #Content/StarterContent/HDRI/HDRI_Epic_Courtyard_Daylight.uasset
->>>>>>> aed4f7f7373c24618692e870caf6e92a55e40995
 
 # Builds
 Build/*

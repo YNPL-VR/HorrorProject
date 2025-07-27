@@ -55,7 +55,6 @@ void AAWaypointManager::BeginPlay()
 				//const float RandomWaitTime = FMath::FRandRange(Path[currentWaypoint]->GetMinWaitSecond(), Path[currentWaypoint]->GetMaxWaitSecond());
 				GetWorld()->GetTimerManager().SetTimer(PathHandle, this, &AAWaypointManager::ArrivedOnHGWaypoint, NPCWaypointWaitTime[0], false);
 			}
-
 		}
 	}
 }

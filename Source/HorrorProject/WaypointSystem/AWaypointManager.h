@@ -7,19 +7,19 @@
 #include "Datatable/NPCWaypointStruct.h"
 #include "AWaypointManager.generated.h"
 
-USTRUCT(Atomic, BlueprintType)
-struct FWaypointInfo2
-{
-	GENERATED_USTRUCT_BODY()
-
-public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float MinWaitSecond;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float MaxWaitSecond;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float Speed;
-};
+//USTRUCT(Atomic, BlueprintType)
+//struct FWaypointInfo2
+//{
+//	GENERATED_USTRUCT_BODY()
+//
+//public:
+//	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+//	float MinWaitSecond;
+//	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+//	float MaxWaitSecond;
+//	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+//	float Speed;
+//};
 
 UCLASS()
 class HORRORPROJECT_API AAWaypointManager : public AActor
@@ -67,7 +67,7 @@ private:
 	TArray<TObjectPtr<class AWaypoint>> Path;
 
 	UPROPERTY(VisibleAnywhere, Category = Path)
-	TArray<FWaypointInfo2> WaypointInfo;
+	TArray<float> WaypointInfo;
 
 	UPROPERTY(VisibleInstanceOnly, Category = Path)
 	int32 currentWaypoint;

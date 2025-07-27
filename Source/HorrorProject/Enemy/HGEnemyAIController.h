@@ -6,7 +6,7 @@
 #include "AIController.h"
 #include "HGEnemyAIController.generated.h"
 
-DECLARE_MULTICAST_DELEGATE(FAlreadyAtGoalDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FAlreadyAtGoalDelegate);
 
 /**
  * 

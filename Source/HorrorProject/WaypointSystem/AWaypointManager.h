@@ -38,8 +38,8 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	FORCEINLINE void SetCurrentWaypoint(int32 InWaypoint) { currentWaypoint = InWaypoint; }
-	FORCEINLINE int GetCurrentWaypoint() const { return currentWaypoint; }
+	FORCEINLINE void SetCurrentWaypoint(int32 InWaypoint) { CurrentWaypoint = InWaypoint; }
+	FORCEINLINE int GetCurrentWaypoint() const { return CurrentWaypoint; }
 
 public:
 	// 에디터에서 프로퍼티가 변경되었을 때 호출될 함수입니다.
@@ -52,7 +52,7 @@ protected:
 	UFUNCTION()
 	void ArrivedOnHGWaypoint();
 	// WaypointInfo 을 업데이트하는 함수.
-	void UpdateWaypointInfo();
+	//void UpdateWaypointInfo();
 	//다음 웨이포인트로 이동하는 함수
 	//void MoveToNextWaypoint();
 
@@ -70,12 +70,9 @@ private:
 	TArray<float> WaypointInfo;
 
 	UPROPERTY(VisibleInstanceOnly, Category = Path)
-	int32 currentWaypoint;
+	int32 CurrentWaypoint;
 
 	FTimerHandle PathHandle;
-
-	UPROPERTY()
-	TArray<float> NPCWaypointWaitTime;
 
 	UPROPERTY()
 	UDataTable* NPCWaypointDataTable;

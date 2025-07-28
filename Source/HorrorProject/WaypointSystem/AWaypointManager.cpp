@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "WaypointSystem/AWaypointManager.h"
@@ -11,9 +11,9 @@ AAWaypointManager::AAWaypointManager()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
-	currentWaypoint = 0;
+	CurrentWaypoint = 0;
 
-	//DataTable ÃÊ±âÈ­
+	//DataTable ì´ˆê¸°í™”
 	static ConstructorHelpers::FObjectFinder<UDataTable> NPCWaypointObject(TEXT("/Game/Datatable/NPCWaypoint"));
 	if (NPCWaypointObject.Succeeded())
 	{
@@ -29,31 +29,34 @@ void AAWaypointManager::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	const FString ContextString(TEXT("ItemDataTable Context"));
-	FNPCWaypointStruct* NPCWaypointStruct = NPCWaypointDataTable->FindRow<FNPCWaypointStruct>(FName("Time"), ContextString);
+	const FString ContextString(TEXT("AAWaypointManager::BeginPlay"));
+	TArray<FNPCWaypointStruct*> AllRows;
+	//FNPCWaypointStruct* NPCWaypointStruct = NPCWaypointDataTable->FindRow<FNPCWaypointStruct>(FName("Time"), ContextString);
 
-	NPCWaypointWaitTime.Add(NPCWaypointStruct->Waypoint0to1);
-	NPCWaypointWaitTime.Add(NPCWaypointStruct->Waypoint1to2);
-	NPCWaypointWaitTime.Add(NPCWaypointStruct->Waypoint2to3);
-	NPCWaypointWaitTime.Add(NPCWaypointStruct->Waypoint3to4);
-	NPCWaypointWaitTime.Add(NPCWaypointStruct->Waypoint4to5);
-	NPCWaypointWaitTime.Add(NPCWaypointStruct->Waypoint5to6);
+	NPCWaypointDataTable->GetAllRows(ContextString, AllRows);
+	for (const FNPCWaypointStruct* RowData : AllRows)
+	{
+		if (RowData)
+		{
+			WaypointInfo.Add(RowData->WaitTime);
+		}
+	}
 
-	//Ã³À½ WayPoint ÀÌµ¿
+	//ì²˜ìŒ WayPoint ì´ë™
 	if (Path.Num() > 0 && nullptr != TargetClass)
 	{
 		if (nullptr != Path[0])
 		{
 			FActorSpawnParameters spawnParams;
 			Target = GetWorld()->SpawnActor<AHGCharacterEnemy>(TargetClass, Path[0]->GetActorLocation(), Path[0]->GetActorRotation(), spawnParams);
-			currentWaypoint = 0;
+			CurrentWaypoint = 0;
 			if (Path.Num() > 1)
 			{
 				AHGEnemyAIController* controller = Cast<AHGEnemyAIController>(Target->GetController());
 				controller->AlreadyAtGoalMultiDelegate.AddDynamic(this, &AAWaypointManager::ArrivedOnHGWaypoint); //(this, FName("ArrivedOnHGWaypoint"));
-				// FMath::FRandRange( 0 , 0 ) ÀÏ¶§ SetTimer°¡ ÀÛµ¿ÇÏÁö ¾Ê´Â ¹ö±× ¹ß»ý
-				//const float RandomWaitTime = FMath::FRandRange(Path[currentWaypoint]->GetMinWaitSecond(), Path[currentWaypoint]->GetMaxWaitSecond());
-				GetWorld()->GetTimerManager().SetTimer(PathHandle, this, &AAWaypointManager::ArrivedOnHGWaypoint, NPCWaypointWaitTime[0], false);
+				// FMath::FRandRange( 0 , 0 ) ì¼ë•Œ SetTimerê°€ ìž‘ë™í•˜ì§€ ì•ŠëŠ” ë²„ê·¸ ë°œìƒ
+				//const float RandomWaitTime = FMath::FRandRange(Path[CurrentWaypoint]->GetMinWaitSecond(), Path[CurrentWaypoint]->GetMaxWaitSecond());
+				GetWorld()->GetTimerManager().SetTimer(PathHandle, this, &AAWaypointManager::ArrivedOnHGWaypoint, WaypointInfo[0], false);
 			}
 		}
 	}
@@ -87,93 +90,97 @@ void AAWaypointManager::Tick(float DeltaTime)
 //}
 //#endif
 
-//Waypoint ¿¡ µµÂøÇßÀ» ¶§ ½ÇÇàÇÏ´Â ÇÔ¼ö
+//Waypoint ì— ë„ì°©í–ˆì„ ë•Œ ì‹¤í–‰í•˜ëŠ” í•¨ìˆ˜
 void AAWaypointManager::ArrivedOnHGWaypoint()
 {
 	GetWorld()->GetTimerManager().ClearTimer(PathHandle);
 	
-	//ÇöÀç Waypoint °»½Å
-	++currentWaypoint;
+	//í˜„ìž¬ Waypoint ê°±ì‹ 
+	++CurrentWaypoint;
 
 	
 	
-	//ÀÌµ¿
+	//ì´ë™
 	if (Target)
 	{
-		Target->SetActorLocation(Path[currentWaypoint]->GetActorLocation());
-		Target->SetActorRotation(Path[currentWaypoint]->GetActorRotation());
+		Target->SetActorLocation(Path[CurrentWaypoint]->GetActorLocation());
+		Target->SetActorRotation(Path[CurrentWaypoint]->GetActorRotation());
 		Target->SetState(EStateEnemy::Waiting);
 	}
 
-	//n ÃÊ µÚ ´ÙÀ½ Waypoint ·Î ÀÌµ¿ 
-	if (WaypointInfo.Num() > currentWaypoint + 1)
+	//n ì´ˆ ë’¤ ë‹¤ìŒ Waypoint ë¡œ ì´ë™ 
+	if (Path.Num() > CurrentWaypoint + 1 && WaypointInfo.Num() > CurrentWaypoint)
 	{
-		//const float RandomWaitTime = FMath::FRandRange(Path[currentWaypoint]->GetMinWaitSecond(), Path[currentWaypoint]->GetMaxWaitSecond());
-		GetWorld()->GetTimerManager().SetTimer(PathHandle, this, &AAWaypointManager::ArrivedOnHGWaypoint, NPCWaypointWaitTime[currentWaypoint], false);
+		//const float RandomWaitTime = FMath::FRandRange(Path[CurrentWaypoint]->GetMinWaitSecond(), Path[CurrentWaypoint]->GetMaxWaitSecond());
+		GetWorld()->GetTimerManager().SetTimer(PathHandle, this, &AAWaypointManager::ArrivedOnHGWaypoint, WaypointInfo[CurrentWaypoint], false);
+	}
+	else if(Path.Num() > CurrentWaypoint + 1 && WaypointInfo.Num() <= CurrentWaypoint)
+	{
+		UE_LOG(LogTemp, Error, TEXT("WaitTime ë³´ë‹¤ Waypointê°€ ë§Žì•„ì„œ ëˆ„ë½ëœ Waypointê°€ ìžˆìŠµë‹ˆë‹¤."));
 	}
 }
 
 
-void AAWaypointManager::UpdateWaypointInfo()
-{
-	WaypointInfo.Empty();
-
-
-
-	{
-		/*
-		const FString ContextString(TEXT("ItemDataTable Context"));
-		FNPCWaypointStruct* NPCWaypointStruct = NPCWaypointDataTable->FindRow<FNPCWaypointStruct>(FName("Time"), ContextString);
-
-		if (Path.Num() > 0)
-		{
-			WaypointInfo.Reserve(Path.Num());
-			switch (Path.Num())
-			{
-			case 6:
-				WaypointInfo[5]=(NPCWaypointStruct->Waypoint5to6);
-			case 5:
-				WaypointInfo[4] = (NPCWaypointStruct->Waypoint4to5);
-			case 4:
-				WaypointInfo[3] = (NPCWaypointStruct->Waypoint3to4);
-			case 3:
-				WaypointInfo[2] = (NPCWaypointStruct->Waypoint2to3);
-			case 2:
-				WaypointInfo[1]= (NPCWaypointStruct->Waypoint1to2);
-			case 1:
-				WaypointInfo[0]= (NPCWaypointStruct->Waypoint0to1);
-			}
-		}*/
-
-		UE_LOG(LogTemp, Warning, TEXT("NPCWaypointObjectDataTable Succeed!"));
-	}
-
-	
-
-	/*for (const AWaypoint* Waypoint : Path)
-	{
-		if (Waypoint)
-		{
-			FWaypointInfo2 WaypointStruct;
-			WaypointStruct.MaxWaitSecond = Waypoint->GetMaxWaitSecond();
-			WaypointStruct.MinWaitSecond = Waypoint->GetMinWaitSecond();
-			WaypointStruct.Speed = Waypoint->GetSpeed();
-			WaypointInfo.Add(WaypointStruct);
-		}
-	}*/
-}
+//void AAWaypointManager::UpdateWaypointInfo()
+//{
+//	WaypointInfo.Empty();
+//
+//
+//
+//	{
+//		/*
+//		const FString ContextString(TEXT("ItemDataTable Context"));
+//		FNPCWaypointStruct* NPCWaypointStruct = NPCWaypointDataTable->FindRow<FNPCWaypointStruct>(FName("Time"), ContextString);
+//
+//		if (Path.Num() > 0)
+//		{
+//			WaypointInfo.Reserve(Path.Num());
+//			switch (Path.Num())
+//			{
+//			case 6:
+//				WaypointInfo[5]=(NPCWaypointStruct->Waypoint5to6);
+//			case 5:
+//				WaypointInfo[4] = (NPCWaypointStruct->Waypoint4to5);
+//			case 4:
+//				WaypointInfo[3] = (NPCWaypointStruct->Waypoint3to4);
+//			case 3:
+//				WaypointInfo[2] = (NPCWaypointStruct->Waypoint2to3);
+//			case 2:
+//				WaypointInfo[1]= (NPCWaypointStruct->Waypoint1to2);
+//			case 1:
+//				WaypointInfo[0]= (NPCWaypointStruct->Waypoint0to1);
+//			}
+//		}*/
+//
+//		UE_LOG(LogTemp, Warning, TEXT("NPCWaypointObjectDataTable Succeed!"));
+//	}
+//
+//	
+//
+//	/*for (const AWaypoint* Waypoint : Path)
+//	{
+//		if (Waypoint)
+//		{
+//			FWaypointInfo2 WaypointStruct;
+//			WaypointStruct.MaxWaitSecond = Waypoint->GetMaxWaitSecond();
+//			WaypointStruct.MinWaitSecond = Waypoint->GetMinWaitSecond();
+//			WaypointStruct.Speed = Waypoint->GetSpeed();
+//			WaypointInfo.Add(WaypointStruct);
+//		}
+//	}*/
+//}
 
 //void AAWaypointManager::MoveToNextWaypoint()
 //{
 //	UE_LOG(LogTemp, Warning, TEXT("MoveToNextWaypoint"));
-//	if (Path.Num() > currentWaypoint + 1 && Target)
+//	if (Path.Num() > CurrentWaypoint + 1 && Target)
 //	{
 //		AHGEnemyAIController* controller = Cast<AHGEnemyAIController>(Target->GetController());
 //		if (controller)
 //		{
 //			Target->SetState(EStateEnemy::Running);
-//			Target->SetWalkSpeed(Path[currentWaypoint]->GetSpeed());
-//			controller->ToDestination(Path[currentWaypoint + 1]->GetActorLocation());
+//			Target->SetWalkSpeed(Path[CurrentWaypoint]->GetSpeed());
+//			controller->ToDestination(Path[CurrentWaypoint + 1]->GetActorLocation());
 //		}
 //	}
 //}

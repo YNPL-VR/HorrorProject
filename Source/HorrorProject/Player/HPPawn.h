@@ -32,6 +32,9 @@ public:
 	//#if !(UE_BUILD_SHIPPING)
 	//캐릭터 카메라 움직임 추가하기
 public:
+	void ConsumeBattery();
+	FORCEINLINE float GetBattery() const { return CurrentBattery; }
+	FORCEINLINE void SetBattery(const float InBattery) {  CurrentBattery = InBattery; }
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 private:
@@ -42,4 +45,10 @@ private:
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* LookAction;
+
+	// Todo : 버튼 액터에서 하기 3
+	/*UPROPERTY()
+	TObjectPtr<class AAWaypointManager> AWaypointManager;*/
+
+	float CurrentBattery;
 };

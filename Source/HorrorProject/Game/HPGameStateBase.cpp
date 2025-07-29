@@ -20,6 +20,8 @@ void AHPGameStateBase::BeginPlay()
 {
 	Super::BeginPlay();
 
+	CurrentMinigameLevel = 0;
+
 	const FString ContextString(TEXT(" AHPGameStateBase::BeginPlay"));
 	MinigameLevelDesignDataTable->GetAllRows(ContextString, MinigameLevelDesignData);
 
@@ -40,4 +42,24 @@ void AHPGameStateBase::BeginDestroy()
 	{
 		MinigameLevelDesign = nullptr;
 	}
+}
+
+int32 AHPGameStateBase::GetMinigameLevel()
+{
+	return CurrentMinigameLevel;
+}
+
+float AHPGameStateBase::GetLevelUpSecondTimer(int32 InMinigameLevel)
+{
+	return MinigameLevelDesignData[InMinigameLevel]->LevelUpSecondTimer;
+}
+
+float AHPGameStateBase::GetConsumeAlarmBattery(int32 InMinigameLevel)
+{
+	return MinigameLevelDesignData[InMinigameLevel]->AlarmBattery;
+}
+
+float AHPGameStateBase::GetChargeBattery(int32 InMinigameLevel)
+{
+	return MinigameLevelDesignData[InMinigameLevel]->ChargeBattery;
 }

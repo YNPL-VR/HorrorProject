@@ -76,6 +76,19 @@ void AAWaypointManager::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
+void AAWaypointManager::MovePreviousWaypointTarget()
+{
+	if (nullptr == Target || CurrentWaypoint <= 0)
+	{
+		return;
+	}
+
+	GetWorld()->GetTimerManager().ClearTimer(PathHandle);
+
+	//웨이포인트 뒤로 이동
+	MoveWaypointTarget(CurrentWaypoint-1);
+}
+
 //#if WITH_EDITOR
 //void AAWaypointManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 //{
@@ -90,34 +103,38 @@ void AAWaypointManager::Tick(float DeltaTime)
 //}
 //#endif
 
+void AAWaypointManager::MoveWaypointTarget(int32 InWaypoint)
+{
+	//현재 Waypoint 갱신
+	CurrentWaypoint = InWaypoint;
+
+	//이동
+	if (Target)
+	{
+		Target->SetActorLocation(Path[InWaypoint]->GetActorLocation());
+		Target->SetActorRotation(Path[InWaypoint]->GetActorRotation());
+		Target->SetState(EStateEnemy::Waiting);
+	}
+
+	//n 초 뒤 다음 Waypoint 로 이동 
+	if (Path.Num() > InWaypoint + 1 && WaypointInfo.Num() > InWaypoint)
+	{
+		//const float RandomWaitTime = FMath::FRandRange(Path[CurrentWaypoint]->GetMinWaitSecond(), Path[CurrentWaypoint]->GetMaxWaitSecond());
+		GetWorld()->GetTimerManager().SetTimer(PathHandle, this, &AAWaypointManager::ArrivedOnHGWaypoint, WaypointInfo[InWaypoint], false);
+	}
+	else if (Path.Num() > InWaypoint + 1 && WaypointInfo.Num() <= InWaypoint)
+	{
+		UE_LOG(LogTemp, Error, TEXT("WaitTime 보다 Waypoint가 많아서 누락된 Waypoint가 있습니다."));
+	}
+}
+
 //Waypoint 에 도착했을 때 실행하는 함수
 void AAWaypointManager::ArrivedOnHGWaypoint()
 {
 	GetWorld()->GetTimerManager().ClearTimer(PathHandle);
 	
-	//현재 Waypoint 갱신
-	++CurrentWaypoint;
-
-	
-	
 	//이동
-	if (Target)
-	{
-		Target->SetActorLocation(Path[CurrentWaypoint]->GetActorLocation());
-		Target->SetActorRotation(Path[CurrentWaypoint]->GetActorRotation());
-		Target->SetState(EStateEnemy::Waiting);
-	}
-
-	//n 초 뒤 다음 Waypoint 로 이동 
-	if (Path.Num() > CurrentWaypoint + 1 && WaypointInfo.Num() > CurrentWaypoint)
-	{
-		//const float RandomWaitTime = FMath::FRandRange(Path[CurrentWaypoint]->GetMinWaitSecond(), Path[CurrentWaypoint]->GetMaxWaitSecond());
-		GetWorld()->GetTimerManager().SetTimer(PathHandle, this, &AAWaypointManager::ArrivedOnHGWaypoint, WaypointInfo[CurrentWaypoint], false);
-	}
-	else if(Path.Num() > CurrentWaypoint + 1 && WaypointInfo.Num() <= CurrentWaypoint)
-	{
-		UE_LOG(LogTemp, Error, TEXT("WaitTime 보다 Waypoint가 많아서 누락된 Waypoint가 있습니다."));
-	}
+	MoveWaypointTarget(CurrentWaypoint + 1);
 }
 
 

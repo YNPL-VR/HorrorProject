@@ -5,6 +5,9 @@
 #include "InputMappingContext.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Game/HPGameStateBase.h"
+#include "WaypointSystem/AWaypointManager.h"
+#include "EngineUtils.h"
 
 // Sets default values
 AHPPawn::AHPPawn()
@@ -32,6 +35,8 @@ AHPPawn::AHPPawn()
 void AHPPawn::BeginPlay()
 {
 	Super::BeginPlay();
+
+	CurrentBattery = 100.f;
 	
 	// Add Input Mapping Context
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
@@ -45,6 +50,19 @@ void AHPPawn::BeginPlay()
 			}
 		}
 	}
+
+	// Todo : 버튼 액터에서 하기 2
+	/*UWorld* World = GetWorld();
+	if (World)
+	{
+		for (TActorIterator<AAWaypointManager> It(World); It; ++It)
+		{
+			AWaypointManager = *It;
+
+			break;
+		}
+	}*/
+	
 
 }
 
@@ -61,8 +79,24 @@ void AHPPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	if (UEnhancedInputComponent* Subsystem = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		//Subsystem->BindAction(MoveAction,ETriggerEvent::Triggered,this,&AHPPawn::Move);
+		Subsystem->BindAction(MoveAction,ETriggerEvent::Triggered,this,&AHPPawn::Move);
 		//Subsystem->BindAction(LookAction,ETriggerEvent::Triggered,this,&AHPPawn::Look);
+	}
+}
+
+void AHPPawn::ConsumeBattery()
+{
+	IHPMinigameDataInterface* gs = GetWorld()->GetGameState< IHPMinigameDataInterface>();
+	if (gs)
+	{
+		CurrentBattery -= gs->GetConsumeAlarmBattery(gs->GetMinigameLevel());
+		// Todo : UI에서도 감소
+
+		// Todo : 버튼 액터에서 하기 1
+		//if (AWaypointManager)
+		//{
+		//	AWaypointManager->MovePreviousWaypointTarget();
+		//}
 	}
 }
 
@@ -82,7 +116,6 @@ void AHPPawn::Move(const FInputActionValue& Value)
 		AddMovementInput(ForwardDirection, MovementVector.X * 500.0f);
 		AddMovementInput(RightDirection, MovementVector.Y * 500.0f);
 	}
-
 }
 
 void AHPPawn::Look(const FInputActionValue& Value)
@@ -91,7 +124,7 @@ void AHPPawn::Look(const FInputActionValue& Value)
 
 	if (Controller != nullptr)
 	{
-		//Todo: vr모드일때 디버그 모드일때 bUseControllerRotationYaw가 true
+		//Todo: 자유모드를 위해서 vr모드일때 디버그 모드일때 bUseControllerRotationYaw가 true
 		AddControllerYawInput(LookAxisVector.X * 1.5f);
 		AddControllerPitchInput(LookAxisVector.Y * 1.5f);
 	}

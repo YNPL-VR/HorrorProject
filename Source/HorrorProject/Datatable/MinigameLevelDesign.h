@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
-#include "NPCWaypointStruct.generated.h"
+#include "MinigameLevelDesign.generated.h"
 
 USTRUCT(BlueprintType)
 struct FMinigameLevelDesign : public FTableRowBase

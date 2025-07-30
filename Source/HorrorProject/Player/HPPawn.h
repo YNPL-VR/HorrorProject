@@ -32,7 +32,11 @@ public:
 	//#if !(UE_BUILD_SHIPPING)
 	//캐릭터 카메라 움직임 추가하기
 public:
+	//배터리 소모 함수
+	UFUNCTION()
 	void ConsumeBattery();
+	//배터리 충전 함수
+	void ChargeBattery();
 	FORCEINLINE float GetBattery() const { return CurrentBattery; }
 	FORCEINLINE void SetBattery(const float InBattery) {  CurrentBattery = InBattery; }
 	void Move(const FInputActionValue& Value);

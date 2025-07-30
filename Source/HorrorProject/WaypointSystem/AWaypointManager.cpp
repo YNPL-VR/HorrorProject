@@ -5,6 +5,8 @@
 #include "WaypointSystem/Waypoint.h"
 #include "Enemy/HGCharacterEnemy.h"
 #include "Enemy/HGEnemyAIController.h"
+#include "EngineUtils.h"
+#include "Actor/Alarmbutton.h"
 
 // Sets default values
 AAWaypointManager::AAWaypointManager()
@@ -58,6 +60,23 @@ void AAWaypointManager::BeginPlay()
 				//const float RandomWaitTime = FMath::FRandRange(Path[CurrentWaypoint]->GetMinWaitSecond(), Path[CurrentWaypoint]->GetMaxWaitSecond());
 				GetWorld()->GetTimerManager().SetTimer(PathHandle, this, &AAWaypointManager::ArrivedOnHGWaypoint, WaypointInfo[0], false);
 			}
+		}
+	}
+
+	//알람버튼 눌린것을 알려주는 델리게이트 등록
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		//#include "EngineUtils.h"
+		for (TActorIterator<AAlarmbutton> It(World); It; ++It)
+		{
+			AAlarmbutton* Alarmbutton = *It;
+			if (Alarmbutton)
+			{
+				Alarmbutton->OnAlarmbuttonDelegate.AddUFunction(this, FName("MovePreviousWaypointTarget"));
+			}
+
+			break;
 		}
 	}
 }

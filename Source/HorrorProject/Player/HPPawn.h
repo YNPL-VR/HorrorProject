@@ -32,6 +32,7 @@ public:
 	//#if !(UE_BUILD_SHIPPING)
 	//캐릭터 카메라 움직임 추가하기
 public:
+	UFUNCTION()
 	void ConsumeBattery();
 	FORCEINLINE float GetBattery() const { return CurrentBattery; }
 	FORCEINLINE void SetBattery(const float InBattery) {  CurrentBattery = InBattery; }

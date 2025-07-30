@@ -8,6 +8,7 @@
 #include "Game/HPGameStateBase.h"
 #include "WaypointSystem/AWaypointManager.h"
 #include "EngineUtils.h"
+#include "Actor/Alarmbutton.h"
 
 // Sets default values
 AHPPawn::AHPPawn()
@@ -63,7 +64,20 @@ void AHPPawn::BeginPlay()
 		}
 	}*/
 	
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		for (TActorIterator<AAlarmbutton> It(World); It; ++It)
+		{
+			AAlarmbutton* Alarmbutton = *It;
+			if (Alarmbutton)
+			{
+				Alarmbutton->OnAlarmbuttonDelegate.AddUFunction(this, FName("ConsumeBattery"));
+			}
 
+			break;
+		}
+	}
 }
 
 // Called every frame
@@ -89,6 +103,8 @@ void AHPPawn::ConsumeBattery()
 	IHPMinigameDataInterface* gs = GetWorld()->GetGameState< IHPMinigameDataInterface>();
 	if (gs)
 	{
+		//Todo : 0 이하로 떨어지지 않게 처리, 알람버튼 델리게이트 완료
+		//CurrentBattery = FMath::Max<float>()
 		CurrentBattery -= gs->GetConsumeAlarmBattery(gs->GetMinigameLevel());
 		// Todo : UI에서도 감소
 

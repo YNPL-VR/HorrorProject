@@ -40,7 +40,7 @@ public:
 
 	FORCEINLINE void SetCurrentWaypoint(int32 InWaypoint) { CurrentWaypoint = InWaypoint; }
 	FORCEINLINE int GetCurrentWaypoint() const { return CurrentWaypoint; }
-
+	UFUNCTION()
 	void MovePreviousWaypointTarget();
 
 public:

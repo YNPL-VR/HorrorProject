@@ -103,9 +103,9 @@ void AHPPawn::ConsumeBattery()
 	IHPMinigameDataInterface* gs = GetWorld()->GetGameState< IHPMinigameDataInterface>();
 	if (gs)
 	{
-		//Todo : 0 이하로 떨어지지 않게 처리, 알람버튼 델리게이트 완료
-		//CurrentBattery = FMath::Max<float>()
-		CurrentBattery -= gs->GetConsumeAlarmBattery(gs->GetMinigameLevel());
+		//CurrentBattery 를 현재 레벨 난이도에 해당하는 소모배터리량 만큼 감소
+		//CurrentBattery 0 이하로 떨어지지 않게 처리
+		CurrentBattery = FMath::Max<float>(0.f, CurrentBattery - gs->GetConsumeAlarmBattery(gs->GetMinigameLevel()));
 		// Todo : UI에서도 감소
 
 		// Todo : 버튼 액터에서 하기 1
@@ -113,6 +113,18 @@ void AHPPawn::ConsumeBattery()
 		//{
 		//	AWaypointManager->MovePreviousWaypointTarget();
 		//}
+	}
+}
+
+void AHPPawn::ChargeBattery()
+{
+	IHPMinigameDataInterface* gs = GetWorld()->GetGameState< IHPMinigameDataInterface>();
+	if (gs)
+	{
+		//CurrentBattery 를 현재 레벨 난이도에 해당하는 충전배터리량 만큼 증가
+		//CurrentBattery 100 이상으로 높아지지 않게 처리
+		CurrentBattery = FMath::Max<float>(100.f, CurrentBattery + gs->GetChargeBattery(gs->GetMinigameLevel()));
+		// Todo : UI에서도 증가
 	}
 }
 

@@ -7,6 +7,10 @@
 #include "InputActionValue.h"
 #include "HPPawn.generated.h"
 
+//알람 버튼이 눌렸다는 것을 알리는 델리게이트
+DECLARE_MULTICAST_DELEGATE(FSuccessConsumeBatteryDelegate);
+DECLARE_MULTICAST_DELEGATE(FFailedConsumeBatteryDelegate);
+
 UCLASS()
 class HORRORPROJECT_API AHPPawn : public APawn
 {
@@ -19,7 +23,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -41,6 +45,9 @@ public:
 	FORCEINLINE void SetBattery(const float InBattery) {  CurrentBattery = InBattery; }
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
+public:
+	FSuccessConsumeBatteryDelegate SuccessConsumeBatteryDelegate;
+	FFailedConsumeBatteryDelegate FailedConsumeBatteryDelegate;
 private:
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))

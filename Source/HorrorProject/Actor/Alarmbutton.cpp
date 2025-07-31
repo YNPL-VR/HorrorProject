@@ -2,6 +2,8 @@
 
 
 #include "Actor/Alarmbutton.h"
+#include "Player/HPPawn.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 AAlarmbutton::AAlarmbutton()
@@ -16,6 +18,13 @@ void AAlarmbutton::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	//알람 성공/실패 델리게이트 등록
+	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
+	if (AHPPawn* Player = Cast<AHPPawn>(PlayerPawn))
+	{
+		Player->FailedConsumeBatteryDelegate.AddUFunction(this, FName("FailedButtonResult"));
+		Player->SuccessConsumeBatteryDelegate.AddUFunction(this, FName("SuccessButtonResult"));
+	}
 }
 
 void AAlarmbutton::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -36,5 +45,15 @@ void AAlarmbutton::OnAlarmbutton()
 {
 	if (OnAlarmbuttonDelegate.IsBound())
 		OnAlarmbuttonDelegate.Broadcast();
+}
+
+void AAlarmbutton::FailedButtonResult()
+{
+	FailedButtonResultBP();
+}
+
+void AAlarmbutton::SuccessButtonResult()
+{
+	SuccessButtonResultBP();
 }
 

@@ -14,6 +14,10 @@
 *	3. 배터리 UI 표시
 *	4. 게임 승리시에 배터리 충전 함수
 *	5. GameState에서 Battery와 Minigame정보 GetSet 함수 만들기
+* 
+*	2025.07.31
+*	playerPawn 핸드메시에 sphere 콜리전 컴포넌트 추가하여 버튼과 물리충돌되게 만든다.
+*	버튼을 눌렀다는 델리게이트를 받고 playerPawn 에서 배터리 소모 가능여부를 검사하여 가능/불가능 델리게이트를 각각 Broadcast, WaypointManager에서 가능 델리게이트를 받고 뒤로이동하는 함수 작동
 */
 /**
  * 

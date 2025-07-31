@@ -44,10 +44,20 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void FailedButtonResultBP();
+	UFUNCTION(BlueprintImplementableEvent)
+	void SuccessButtonResultBP();
 protected:
 	//블루프린트에서 델리게이트를 Broadcast 하기 위한 임시 함수
 	UFUNCTION(BlueprintCallable)
 	void OnAlarmbutton();
+
+	UFUNCTION()
+	void FailedButtonResult();
+	UFUNCTION()
+	void SuccessButtonResult();
 public:
 	FOnAlarmbuttonDelegate OnAlarmbuttonDelegate;
 

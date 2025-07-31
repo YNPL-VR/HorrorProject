@@ -80,6 +80,14 @@ void AHPPawn::BeginPlay()
 	}
 }
 
+void AHPPawn::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	SuccessConsumeBatteryDelegate.Clear();
+	FailedConsumeBatteryDelegate.Clear();
+}
+
 // Called every frame
 void AHPPawn::Tick(float DeltaTime)
 {
@@ -93,7 +101,7 @@ void AHPPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	if (UEnhancedInputComponent* Subsystem = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		Subsystem->BindAction(MoveAction,ETriggerEvent::Triggered,this,&AHPPawn::Move);
+		//Subsystem->BindAction(MoveAction,ETriggerEvent::Triggered,this,&AHPPawn::Move);
 		//Subsystem->BindAction(LookAction,ETriggerEvent::Triggered,this,&AHPPawn::Look);
 	}
 }
@@ -103,16 +111,27 @@ void AHPPawn::ConsumeBattery()
 	IHPMinigameDataInterface* gs = GetWorld()->GetGameState< IHPMinigameDataInterface>();
 	if (gs)
 	{
-		//CurrentBattery 를 현재 레벨 난이도에 해당하는 소모배터리량 만큼 감소
-		//CurrentBattery 0 이하로 떨어지지 않게 처리
-		CurrentBattery = FMath::Max<float>(0.f, CurrentBattery - gs->GetConsumeAlarmBattery(gs->GetMinigameLevel()));
-		// Todo : UI에서도 감소
+		float ConsumeBattery = gs->GetConsumeAlarmBattery(gs->GetMinigameLevel());
 
-		// Todo : 버튼 액터에서 하기 1
-		//if (AWaypointManager)
-		//{
-		//	AWaypointManager->MovePreviousWaypointTarget();
-		//}
+		if (CurrentBattery >= ConsumeBattery)
+		{
+			//CurrentBattery 를 현재 레벨 난이도에 해당하는 소모배터리량 만큼 감소
+			CurrentBattery -= ConsumeBattery;
+			// Todo : UI에서도 감소
+			if (SuccessConsumeBatteryDelegate.IsBound())
+			{
+				SuccessConsumeBatteryDelegate.Broadcast();
+			}
+		}
+		else
+		{
+
+			if (FailedConsumeBatteryDelegate.IsBound())
+			{
+				FailedConsumeBatteryDelegate.Broadcast();
+			}
+		}
+		
 	}
 }
 

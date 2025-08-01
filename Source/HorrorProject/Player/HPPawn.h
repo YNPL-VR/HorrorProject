@@ -10,6 +10,8 @@
 //알람 버튼이 눌렸다는 것을 알리는 델리게이트
 DECLARE_MULTICAST_DELEGATE(FSuccessConsumeBatteryDelegate);
 DECLARE_MULTICAST_DELEGATE(FFailedConsumeBatteryDelegate);
+DECLARE_DELEGATE_OneParam(FUIConsumeBatteryDelegate, float /* CurrentBattery */);
+
 
 UCLASS()
 class HORRORPROJECT_API AHPPawn : public APawn
@@ -47,13 +49,12 @@ public:
 	void Look(const FInputActionValue& Value);
 public:
 	FSuccessConsumeBatteryDelegate SuccessConsumeBatteryDelegate;
+	FUIConsumeBatteryDelegate UIConsumeBatteryDelegate;
 	FFailedConsumeBatteryDelegate FailedConsumeBatteryDelegate;
 private:
-	/** Move Input Action */
+	// Todo : 자유 시점을 위해 시도 했지만 실패
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* MoveAction;
-
-	/** Look Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* LookAction;
 
@@ -62,4 +63,9 @@ private:
 	TObjectPtr<class AAWaypointManager> AWaypointManager;*/
 
 	float CurrentBattery;
+
+	// HUD - 배터리량 표시
+	/*UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Widget")
+	class UWidgetComponent* HUDWidgetComponent;*/
+
 };

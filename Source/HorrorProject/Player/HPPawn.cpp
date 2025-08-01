@@ -9,6 +9,8 @@
 #include "WaypointSystem/AWaypointManager.h"
 #include "EngineUtils.h"
 #include "Actor/Alarmbutton.h"
+#include "Blueprint/UserWidget.h"
+#include "Components/WidgetComponent.h"
 
 // Sets default values
 AHPPawn::AHPPawn()
@@ -30,6 +32,24 @@ AHPPawn::AHPPawn()
 	{
 		LookAction = InputLookFinder.Object;
 	}
+
+	/*HUDWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HUDWidgetComponent"));
+	HUDWidgetComponent->SetCollisionProfileName(FName("NoCollision"));
+	
+	static ConstructorHelpers::FClassFinder<UUserWidget> HUD(TEXT("/Script/UMGEditor.WidgetBlueprint'/Game/LSJ/UI/WBP_HPHUD.WBP_HPHUD_C'"));
+	if (HUD.Succeeded())
+	{
+		HUDWidgetComponent->SetWidgetClass(HUD.Class);
+		HUDWidgetComponent->SetDrawSize(FVector2D(1920, 1080));
+	}
+
+	static ConstructorHelpers::FObjectFinder<UMaterial> MaterialFinder(TEXT("/Game/LSJ/Material/M_HPHUD.M_HPHUD"));
+	if (MaterialFinder.Succeeded())
+	{
+		HUDWidgetComponent->SetMaterial(0,MaterialFinder.Object);
+	}*/
+	
+	
 }
 
 // Called when the game starts or when spawned
@@ -78,6 +98,8 @@ void AHPPawn::BeginPlay()
 			break;
 		}
 	}
+
+
 }
 
 void AHPPawn::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -86,6 +108,7 @@ void AHPPawn::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 	SuccessConsumeBatteryDelegate.Clear();
 	FailedConsumeBatteryDelegate.Clear();
+	UIConsumeBatteryDelegate.Unbind();
 }
 
 // Called every frame
@@ -122,6 +145,11 @@ void AHPPawn::ConsumeBattery()
 			{
 				SuccessConsumeBatteryDelegate.Broadcast();
 			}
+			if (UIConsumeBatteryDelegate.IsBound())
+			{
+				UIConsumeBatteryDelegate.Execute(CurrentBattery);
+			}
+			
 		}
 		else
 		{

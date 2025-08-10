@@ -10,8 +10,6 @@ AHPGameStateBase::AHPGameStateBase()
 	if (MinigameLevelDesignDataTableFinder.Succeeded())
 	{
 		MinigameLevelDesignDataTable = MinigameLevelDesignDataTableFinder.Object;
-
-
 		UE_LOG(LogTemp, Warning, TEXT("MinigaemLevelDesignDataTable Succeed!"));
 	}
 }
@@ -32,6 +30,15 @@ void AHPGameStateBase::BeginPlay()
 			UE_LOG(LogTemp, Warning, TEXT("%f"), RowData->LevelUpSecondTimer);
 		}
 	}
+
+	GetWorld()->GetTimerManager().SetTimer(NextLevelTimerHandle,this,&AHPGameStateBase::TimeToNextLevel, GetLevelUpSecondTimer(CurrentMinigameLevel));
+}
+
+void AHPGameStateBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	LevelUpAndNextTimeDynaicMultiDelegate.Clear();
 }
 
 void AHPGameStateBase::BeginDestroy()
@@ -62,4 +69,20 @@ float AHPGameStateBase::GetConsumeAlarmBattery(int32 InMinigameLevel)
 float AHPGameStateBase::GetChargeBattery(int32 InMinigameLevel)
 {
 	return MinigameLevelDesignData[InMinigameLevel]->ChargeBattery;
+}
+
+// 다음 레벨 난이도로 설정
+void AHPGameStateBase::TimeToNextLevel()
+{
+	GetWorld()->GetTimerManager().ClearTimer(NextLevelTimerHandle);
+	++CurrentMinigameLevel;
+	if (LevelUpAndNextTimeDynaicMultiDelegate.IsBound())
+	{
+		LevelUpAndNextTimeDynaicMultiDelegate.Broadcast();
+	}
+	
+	if (CurrentMinigameLevel < MinigameLevelDesignData.Num())
+	{
+		GetWorld()->GetTimerManager().SetTimer(NextLevelTimerHandle, this, &AHPGameStateBase::TimeToNextLevel, GetLevelUpSecondTimer(CurrentMinigameLevel));
+	}
 }

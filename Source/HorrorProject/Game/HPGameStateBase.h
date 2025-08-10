@@ -18,10 +18,19 @@
 *	2025.07.31
 *	playerPawn 핸드메시에 sphere 콜리전 컴포넌트 추가하여 버튼과 물리충돌되게 만든다.
 *	버튼을 눌렀다는 델리게이트를 받고 playerPawn 에서 배터리 소모 가능여부를 검사하여 가능/불가능 델리게이트를 각각 Broadcast, WaypointManager에서 가능 델리게이트를 받고 뒤로이동하는 함수 작동
+* 
+*	2025. 8.10
+*	시간 시스템
+*	AHPGameStateBase 에서 시간에 따라 레벨 변화 알림 Delegate
+*	현재시간표시 - 1시간마다
 */
 /**
  * 
  */
+
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLevelUpAndNextTimeDynaicMultiDelegate);
+
 UCLASS()
 class HORRORPROJECT_API AHPGameStateBase : public AGameStateBase, public IHPMinigameDataInterface
 {
@@ -30,18 +39,30 @@ public:
 	AHPGameStateBase();
 
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void BeginDestroy() override;
 
 	int32 GetMinigameLevel() override;
 	float GetLevelUpSecondTimer(int32 InMinigameLevel) override;
 	float GetConsumeAlarmBattery(int32 InMinigameLevel) override;
 	float GetChargeBattery(int32 InMinigameLevel) override;
+
+	//레벨업 시간 알림
+	FLevelUpAndNextTimeDynaicMultiDelegate LevelUpAndNextTimeDynaicMultiDelegate;
+	//다음 레벨업 시간 알려줄 함수
+	UFUNCTION()
+	void TimeToNextLevel();
 private:
 	//UPROPERTY(VisibleAnywhere, Category = Path)
+	// MinigameLevelDesignDataTable 에서 UPROPERTY()로 데이터를 관리하기 때문에 UPROPERTY를 선언하면 가비지컬렉터가 서로 삭제를 하여 댕글리포인터가 된다.
 	TArray<FMinigameLevelDesign*> MinigameLevelDesignData;
-
+	
 	UPROPERTY()
 	UDataTable* MinigameLevelDesignDataTable;
 
 	int32 CurrentMinigameLevel;
+
+	//다음 레벨업을 알려줄 타이머핸들
+	FTimerHandle NextLevelTimerHandle;
+
 };

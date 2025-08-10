@@ -24,4 +24,10 @@ protected:
 	class UProgressBar* BatteryBar;
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	class UTextBlock* TxtBatteryPercent;
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	class UTextBlock* TxtDay;
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	class UTextBlock* TxtTime;
+
+	TArray<FString> TimeStrArray;
 };

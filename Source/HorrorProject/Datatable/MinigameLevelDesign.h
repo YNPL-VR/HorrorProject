@@ -11,13 +11,13 @@ struct FMinigameLevelDesign : public FTableRowBase
 
 public:
 	//미니게임 난이도 업 타이머
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Waypoint")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MinigameLevel")
 	float LevelUpSecondTimer;
 
 	//알람을 울리면 소모되는 배터리의 양
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Waypoint")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MinigameLevel")
 	float AlarmBattery;
 	//미니게임을 통해 획득하는 배터리의 양 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Waypoint")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MinigameLevel")
 	float ChargeBattery;
 };

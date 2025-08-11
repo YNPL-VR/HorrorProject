@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Containers/Queue.h"
 #include "MinigameManager.generated.h"
 
 UENUM(BlueprintType)
@@ -14,6 +15,8 @@ enum class EMinigame : uint8
 	DartBalloon,
 	BatBall
 };
+
+//Todo : 오브젝트풀링 - 풍선 관리
 
 UCLASS()
 class HORRORPROJECT_API AMinigameManager : public AActor
@@ -27,7 +30,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -39,6 +42,10 @@ public:
 	UFUNCTION()
 	void OffSpawnWeaponTimer();
 	void ResetWeapon();
+
+	UFUNCTION()
+	void StartMinigame();
+	void StopMinigame();
 
 private:
 	//현재 미니게임 종류
@@ -59,6 +66,7 @@ private:
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TArray<TObjectPtr<class ABalloonSpawnPoint>> BalloonSpawnPoints;
 	//풍선
-	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TArray< TObjectPtr<class ABalloon>> Balloons;
+	TQueue<TObjectPtr<class ABalloon>> Balloons;
+	//미니게임 시작 타이머핸들
+	FTimerHandle StartMinigameHandle;
 };

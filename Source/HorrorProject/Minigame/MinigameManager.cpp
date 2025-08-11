@@ -4,6 +4,12 @@
 #include "Minigame/MinigameManager.h"
 #include "Actor/Weapon.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "EngineUtils.h"
+#include "BalloonSpawnPoint.h"
+#include "Balloon.h"
+
+#define MAXBALLOON 20
+
 // Sets default values
 AMinigameManager::AMinigameManager()
 {
@@ -34,8 +40,41 @@ void AMinigameManager::BeginPlay()
 		AllWeapons.Add(CurrentWeapon);
 	}
 
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		//풍선 스폰 위치 액터 찾기
+		for (TActorIterator<ABalloonSpawnPoint> It(World); It; ++It)
+		{
+			ABalloonSpawnPoint* BalloonSpawnPoint = *It;
+			if (BalloonSpawnPoint)
+			{
+				BalloonSpawnPoints.Add(BalloonSpawnPoint);
+			}
+		}
+	}
+	for (int32 BalloonSpawnCount = 0; BalloonSpawnCount < MAXBALLOON; ++BalloonSpawnCount)
+	{
+		ABalloon* Balloon = GetWorld()->SpawnActor<ABalloon>(ABalloon::StaticClass());
+		Balloon->AddToRoot();
+		Balloon->DeactivateToSave();
+		Balloons.Enqueue(Balloon);
+	}
+	
+	
+}
 
+void AMinigameManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
 
+	while (!Balloons.IsEmpty())
+	{
+		TObjectPtr<ABalloon> Balloon;
+		Balloons.Dequeue(Balloon);
+		delete Balloon;
+		Balloon = nullptr;
+	}
 }
 
 // Called every frame
@@ -53,6 +92,8 @@ void AMinigameManager::OnSpawnWeaponTimer()
 void AMinigameManager::OffSpawnWeaponTimer()
 {
 	GetWorld()->GetTimerManager().ClearTimer(SpawnWeaponHandle);
+	//미니게임 시작 타이머 작동
+	GetWorld()->GetTimerManager().SetTimer(StartMinigameHandle,this, &AMinigameManager::StartMinigame,1.0f,false);
 }
 
 void AMinigameManager::ResetWeapon()
@@ -70,5 +111,26 @@ void AMinigameManager::ResetWeapon()
 			FoundMesh->SetSimulatePhysics(true);
 		}
 	}
+
+	//미니게임 강제종료
+	StopMinigame();
+}
+
+void AMinigameManager::StartMinigame()
+{
+
+	//Todo : 랜덤 선택하여 스폰위치 결정 / 어떻게 나머지를 고르지?
+	int32 RandomIdx = FMath::RandRange(0, BalloonSpawnPoints.Num() - 1);
+	
+
+	//Todo : 오브젝트풀링활용 꺼내서 쓰기
+	TObjectPtr<ABalloon> Balloon;
+	Balloons.Dequeue(Balloon);
+	Balloon->RemoveFromRoot();
+}
+
+void AMinigameManager::StopMinigame()
+{
+	
 }
 

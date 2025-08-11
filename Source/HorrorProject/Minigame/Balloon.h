@@ -23,11 +23,17 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Widget")
+	void SetColor(FVector InColor);
+
+	void ActivateToUse();
+	void DeactivateToSave();
+private:
+	UPROPERTY(BlueprintReadOnly, Category="Widget", meta = (AllowPrivateAccess="true"))
 	class UWidgetComponent* NumberWidgetComponent;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh")
+	UPROPERTY(BlueprintReadOnly, Category = "Mesh", meta = (AllowPrivateAccess = "true"))
 	class UStaticMeshComponent* BalloonMeshComponent;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh")
+	UPROPERTY(BlueprintReadOnly, Category = "Mesh", meta = (AllowPrivateAccess = "true"))
 	class UMaterialInstanceDynamic* DynamicMaterialInstance;
 	// Todo : 색 변수 선언하고 , Spawn을 늦게 해서 색 값 넣기
+	FVector Color;
 };

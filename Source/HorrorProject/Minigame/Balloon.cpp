@@ -20,6 +20,8 @@ ABalloon::ABalloon()
 	if (SphereMeshFinder.Succeeded())
 	{
 		BalloonMeshComponent->SetStaticMesh(SphereMeshFinder.Object);
+		BalloonMeshComponent->SetSimulatePhysics(true);
+		//BalloonMeshComponent->SetEnableGravity()
 	}
 
 	static ConstructorHelpers::FObjectFinder<UMaterialInstance> BalloonMaterialFinder(TEXT("/Game/LSJ/Material/MI_Balloon.MI_Balloon"));
@@ -46,7 +48,7 @@ void ABalloon::BeginPlay()
 	{
 		DynamicMaterialInstance = UMaterialInstanceDynamic::Create(BalloonMeshComponent->GetMaterial(0), this);
 		FName ParameterName = FName("Param");
-		DynamicMaterialInstance->SetVectorParameterValue(ParameterName, FVector4(0,0,0));
+		DynamicMaterialInstance->SetVectorParameterValue(ParameterName, Color);
 		BalloonMeshComponent->SetMaterial(0, DynamicMaterialInstance);
 	}
 }
@@ -56,5 +58,24 @@ void ABalloon::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void ABalloon::SetColor(FVector InColor)
+{
+	Color = InColor;
+}
+
+void ABalloon::ActivateToUse()
+{
+	SetActorHiddenInGame(false);
+	//SetActorEnableCollision(ECollision)
+	SetActorTickEnabled(true);
+}
+
+void ABalloon::DeactivateToSave()
+{
+	SetActorHiddenInGame(true);
+	//SetActorEnableCollision(ECollision)
+	SetActorTickEnabled(false);
 }
 

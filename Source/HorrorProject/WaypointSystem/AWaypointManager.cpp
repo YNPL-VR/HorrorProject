@@ -7,6 +7,8 @@
 #include "Enemy/HGEnemyAIController.h"
 #include "Player/HPPawn.h"
 #include "Kismet/GameplayStatics.h"
+#include "Game/HPGameStateBase.h"
+#include "Interface/HPMinigameDataInterface.h"
 
 // Sets default values
 AAWaypointManager::AAWaypointManager()
@@ -62,28 +64,16 @@ void AAWaypointManager::BeginPlay()
 		}
 	}
 
-	////알람버튼 눌린것을 알려주는 델리게이트 등록 -> 플레이어에서 결과를 알려주는 것으로 대체
-	//UWorld* World = GetWorld();
-	//if (World)
-	//{
-	//	//#include "EngineUtils.h"
-	//	for (TActorIterator<AAlarmbutton> It(World); It; ++It)
-	//	{
-	//		AAlarmbutton* Alarmbutton = *It;
-	//		if (Alarmbutton)
-	//		{
-	//			Alarmbutton->OnAlarmbuttonDelegate.AddUFunction(this, FName("MovePreviousWaypointTarget"));
-	//		}
-
-	//		break;
-	//	}
-	//}
-
 	//알람 성공 델리게이트 등록
 	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
 	if (AHPPawn* Player = Cast<AHPPawn>(PlayerPawn))
 	{
 		Player->SuccessConsumeBatteryDelegate.AddUFunction(this, FName("MovePreviousWaypointTarget"));
+	}
+	//게임 클리어시 적 이동하지 않게 만들기
+	if (IHPMinigameDataInterface* gs = Cast<IHPMinigameDataInterface>(GetWorld()->GetGameState()))
+	{
+		gs->EndTimeDynaicMultiDelegate.AddDynamic(this,&AAWaypointManager::SuccessEndGame);
 	}
 }
 
@@ -92,8 +82,8 @@ void AAWaypointManager::BeginPlay()
 void AAWaypointManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
-
 	GetWorld()->GetTimerManager().ClearTimer(PathHandle);
+	EnemyReachEndPointMutiDelegate.Clear();
 }
 
 void AAWaypointManager::Tick(float DeltaTime)
@@ -112,6 +102,11 @@ void AAWaypointManager::MovePreviousWaypointTarget()
 
 	//웨이포인트 뒤로 이동
 	MoveWaypointTarget(CurrentWaypoint-1);
+}
+
+void AAWaypointManager::SuccessEndGame()
+{
+	GetWorld()->GetTimerManager().ClearTimer(PathHandle);
 }
 
 //#if WITH_EDITOR
@@ -133,7 +128,7 @@ void AAWaypointManager::MoveWaypointTarget(int32 InWaypoint)
 	//현재 Waypoint 갱신
 	CurrentWaypoint = InWaypoint;
 
-	//이동
+	//적이 Waypoint 이동
 	if (Target)
 	{
 		Target->SetActorLocation(Path[InWaypoint]->GetActorLocation());
@@ -141,15 +136,22 @@ void AAWaypointManager::MoveWaypointTarget(int32 InWaypoint)
 		Target->SetState(EStateEnemy::Waiting);
 	}
 
-	//n 초 뒤 다음 Waypoint 로 이동 
-	if (Path.Num() > InWaypoint + 1 && WaypointInfo.Num() > InWaypoint)
+	//마지막 웨이포인트에 도착했다면 끝을 알림
+	if (CurrentWaypoint == WaypointInfo.Num() - 1)
 	{
-		//const float RandomWaitTime = FMath::FRandRange(Path[CurrentWaypoint]->GetMinWaitSecond(), Path[CurrentWaypoint]->GetMaxWaitSecond());
+		if (EnemyReachEndPointMutiDelegate.IsBound())
+		{
+			EnemyReachEndPointMutiDelegate.Broadcast();
+		}
+	}
+	//n 초 뒤 다음 Waypoint 로 이동 
+	else if (Path.Num() > InWaypoint + 1 && WaypointInfo.Num() > InWaypoint)
+	{
 		GetWorld()->GetTimerManager().SetTimer(PathHandle, this, &AAWaypointManager::ArrivedOnHGWaypoint, WaypointInfo[InWaypoint], false);
 	}
 	else if (Path.Num() > InWaypoint + 1 && WaypointInfo.Num() <= InWaypoint)
 	{
-		UE_LOG(LogTemp, Error, TEXT("WaitTime 보다 Waypoint가 많아서 누락된 Waypoint가 있습니다."));
+		UE_LOG(LogTemp, Error, TEXT("데이터테이블의 WaitTime 보다 Waypoint가 많아서 누락된 Waypoint가 있습니다."));
 	}
 }
 
@@ -158,6 +160,6 @@ void AAWaypointManager::ArrivedOnHGWaypoint()
 {
 	GetWorld()->GetTimerManager().ClearTimer(PathHandle);
 	
-	//이동
+	//적이 Waypoint로 이동
 	MoveWaypointTarget(CurrentWaypoint + 1);
 }

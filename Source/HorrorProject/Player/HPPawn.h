@@ -58,10 +58,6 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* LookAction;
 
-	// Todo : 버튼 액터에서 하기 3
-	/*UPROPERTY()
-	TObjectPtr<class AAWaypointManager> AWaypointManager;*/
-
 	float CurrentBattery;
 
 	// HUD - 배터리량 표시

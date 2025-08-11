@@ -29,7 +29,7 @@
  */
 
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLevelUpAndNextTimeDynaicMultiDelegate);
+
 
 UCLASS()
 class HORRORPROJECT_API AHPGameStateBase : public AGameStateBase, public IHPMinigameDataInterface
@@ -47,8 +47,6 @@ public:
 	float GetConsumeAlarmBattery(int32 InMinigameLevel) override;
 	float GetChargeBattery(int32 InMinigameLevel) override;
 
-	//레벨업 시간 알림
-	FLevelUpAndNextTimeDynaicMultiDelegate LevelUpAndNextTimeDynaicMultiDelegate;
 	//다음 레벨업 시간 알려줄 함수
 	UFUNCTION()
 	void TimeToNextLevel();

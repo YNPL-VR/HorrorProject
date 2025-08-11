@@ -7,6 +7,8 @@
 #include "Datatable/NPCWaypointStruct.h"
 #include "AWaypointManager.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FEnemyReachEndPointMutiDelegate);
+
 UCLASS()
 class HORRORPROJECT_API AAWaypointManager : public AActor
 {
@@ -28,6 +30,8 @@ public:
 	FORCEINLINE int GetCurrentWaypoint() const { return CurrentWaypoint; }
 	UFUNCTION()
 	void MovePreviousWaypointTarget();
+	UFUNCTION()
+	void SuccessEndGame();
 
 public:
 	// Waypoint 설정할 때마다 에디터의 정보 갱신
@@ -41,7 +45,8 @@ protected:
 	//웨이포인트에 도착했을때의 함수명
 	UFUNCTION()
 	void ArrivedOnHGWaypoint();
-
+public:
+	FEnemyReachEndPointMutiDelegate EnemyReachEndPointMutiDelegate;
 private:
 	UPROPERTY(EditAnywhere, Category = Path, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class AHGCharacterEnemy> TargetClass;

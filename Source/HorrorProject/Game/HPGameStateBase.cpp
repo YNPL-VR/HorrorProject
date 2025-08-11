@@ -39,6 +39,7 @@ void AHPGameStateBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 
 	LevelUpAndNextTimeDynaicMultiDelegate.Clear();
+	EndTimeDynaicMultiDelegate.Clear();
 }
 
 void AHPGameStateBase::BeginDestroy()
@@ -79,6 +80,10 @@ void AHPGameStateBase::TimeToNextLevel()
 	if (LevelUpAndNextTimeDynaicMultiDelegate.IsBound())
 	{
 		LevelUpAndNextTimeDynaicMultiDelegate.Broadcast();
+	}
+	if (EndTimeDynaicMultiDelegate.IsBound() && CurrentMinigameLevel == MinigameLevelDesignData.Num() - 1)
+	{
+		EndTimeDynaicMultiDelegate.Broadcast();
 	}
 	
 	if (CurrentMinigameLevel < MinigameLevelDesignData.Num())

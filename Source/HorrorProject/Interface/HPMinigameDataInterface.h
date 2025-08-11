@@ -14,6 +14,8 @@ class UHPMinigameDataInterface : public UInterface
 	GENERATED_BODY()
 };
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLevelUpAndNextTimeDynaicMultiDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FEndTimeDynaicMultiDelegate);
 /**
  * 
  */
@@ -34,4 +36,9 @@ public:
 
 	UFUNCTION()
 	virtual float GetChargeBattery(int32 InMinigameLevel) = 0;
+
+	//레벨업 시간 알림
+	FLevelUpAndNextTimeDynaicMultiDelegate LevelUpAndNextTimeDynaicMultiDelegate;
+	//게임 종료를 알림
+	FEndTimeDynaicMultiDelegate EndTimeDynaicMultiDelegate;
 };

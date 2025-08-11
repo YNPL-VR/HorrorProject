@@ -43,7 +43,7 @@ public:
 private:
 	//현재 미니게임 종류
 	EMinigame CurrentMinigame = EMinigame::NumBalloon;
-	//무기를 스폰해 놓고 비활성화 시킨 후 해당 미니게임마다 쓰고있는 무기는 비활성화하고 해당 무기를 활성화하자
+	//무기를 스폰해 놓고 비활성화 시킨 후 해당 미니게임마다 쓰고있는 무기는 비활성화하고 해당 무기를 활성화
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class AWeapon> CurrentWeapon;
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -55,5 +55,10 @@ private:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, meta = (AllowPrivateAccess = "true"),Category = "Spawn")
 	float SpawnTime;
 	FTimerHandle SpawnWeaponHandle;
-
+	//풍선 스폰 위치
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TArray<TObjectPtr<class ABalloonSpawnPoint>> BalloonSpawnPoints;
+	//풍선
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TArray< TObjectPtr<class ABalloon>> Balloons;
 };

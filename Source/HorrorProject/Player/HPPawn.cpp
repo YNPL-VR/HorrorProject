@@ -71,18 +71,6 @@ void AHPPawn::BeginPlay()
 			}
 		}
 	}
-
-	// Todo : 버튼 액터에서 하기 2
-	/*UWorld* World = GetWorld();
-	if (World)
-	{
-		for (TActorIterator<AAWaypointManager> It(World); It; ++It)
-		{
-			AWaypointManager = *It;
-
-			break;
-		}
-	}*/
 	
 	UWorld* World = GetWorld();
 	if (World)

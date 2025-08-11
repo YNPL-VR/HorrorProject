@@ -18,16 +18,23 @@ public:
 
 	UFUNCTION()
 	void SetBatteryPercent(float InBattery);
-
+protected:
+	UFUNCTION()
+	void SetTime();
+	UFUNCTION()
+	void SetVsisibleSuccessMsg();
+	UFUNCTION()
+	void SetVsisibleFailMsg();
 protected:
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	class UProgressBar* BatteryBar;
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	class UTextBlock* TxtBatteryPercent;
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
-	class UTextBlock* TxtDay;
-	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	class UTextBlock* TxtTime;
-
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	class UTextBlock* TxtSuccessMsg;
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	class UTextBlock* TxtFailMsg;
 	TArray<FString> TimeStrArray;
 };

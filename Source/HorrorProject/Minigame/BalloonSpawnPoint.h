@@ -10,7 +10,7 @@ UCLASS()
 class HORRORPROJECT_API ABalloonSpawnPoint : public AActor
 {
 	GENERATED_BODY()
-	
+	friend class AMinigameManager;
 public:	
 	// Sets default values for this actor's properties
 	ABalloonSpawnPoint();
@@ -23,4 +23,7 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+private:
+	int32 ScreenBalloonNumber = 0;;
+	float PreviousSpawnTime = 0.0f;;
 };

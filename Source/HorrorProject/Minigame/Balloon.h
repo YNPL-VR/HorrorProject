@@ -10,7 +10,7 @@ UCLASS()
 class HORRORPROJECT_API ABalloon : public AActor
 {
 	GENERATED_BODY()
-	
+
 public:	
 	// Sets default values for this actor's properties
 	ABalloon();
@@ -25,15 +25,21 @@ public:
 
 	void SetColor(FVector InColor);
 
-	void ActivateToUse();
+	void ActivateToUse(FVector Location, FRotator Rotation, float Speed);
 	void DeactivateToSave();
+	class UStaticMesh* GetActorMesh() const;
+	void SetNumberInWidget(int32 Num);
+	void SetNumberWidgetVisible(bool bVisible);
 private:
-	UPROPERTY(BlueprintReadOnly, Category="Widget", meta = (AllowPrivateAccess="true"))
+	UPROPERTY(EditAnywhere, Category="Widget", meta = (AllowPrivateAccess="true"))
 	class UWidgetComponent* NumberWidgetComponent;
-	UPROPERTY(BlueprintReadOnly, Category = "Mesh", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, Category = "Mesh", meta = (AllowPrivateAccess = "true"))
 	class UStaticMeshComponent* BalloonMeshComponent;
-	UPROPERTY(BlueprintReadOnly, Category = "Mesh", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, Category = "Mesh", meta = (AllowPrivateAccess = "true"))
 	class UMaterialInstanceDynamic* DynamicMaterialInstance;
 	// Todo : 색 변수 선언하고 , Spawn을 늦게 해서 색 값 넣기
 	FVector Color;
+	int32 ScreenBalloonNumber;
+	//속도값
+	float ThrustForce = 0.0f;
 };

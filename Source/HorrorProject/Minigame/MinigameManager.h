@@ -5,7 +5,10 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Containers/Queue.h"
+#include "Datatable/NumBalloon.h"
+#include "Containers/Queue.h"
 #include "MinigameManager.generated.h"
+
 
 UENUM(BlueprintType)
 enum class EMinigame : uint8
@@ -46,10 +49,13 @@ public:
 	UFUNCTION()
 	void StartMinigame();
 	void StopMinigame();
+	UFUNCTION()
+	void SpawnBalloon(FVector Location, FRotator Rotation, float Speed,int32 Number, ABalloon*   Balloon);
 
 private:
 	//현재 미니게임 종류
 	EMinigame CurrentMinigame = EMinigame::NumBalloon;
+
 	//무기를 스폰해 놓고 비활성화 시킨 후 해당 미니게임마다 쓰고있는 무기는 비활성화하고 해당 무기를 활성화
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class AWeapon> CurrentWeapon;
@@ -57,16 +63,26 @@ private:
 	TArray<TObjectPtr<class AWeapon>> AllWeapons;
 	UPROPERTY()
 	TSubclassOf<class AWeapon> GunClass;
+
 	//Player가 총을 SpawnPoint에서 집은 후 놓았을 때,Spawn의 카운팅이 시작된다 - 다시 잡았을때 Spawn카운팅을 초기화시켜야할것같으므로 잡을때와 놓았을때의 델리게이트 -> 타이머
 	//무기 스폰 타임
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, meta = (AllowPrivateAccess = "true"),Category = "Spawn")
 	float SpawnTime;
 	FTimerHandle SpawnWeaponHandle;
+
 	//풍선 스폰 위치
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TArray<TObjectPtr<class ABalloonSpawnPoint>> BalloonSpawnPoints;
-	//풍선
-	TQueue<TObjectPtr<class ABalloon>> Balloons;
+	TArray<class ABalloonSpawnPoint*> BalloonSpawnPoints;
+	//풍선 오브젝트 풀
+	//풍선 스폰 - 타이머 필요 , 타이머를 풍선과 짝지어줌
+	TQueue<TPair<class ABalloon*, FTimerHandle>> BalloonQueue;
+	//사용중인 풍선
+	TArray<TPair<class ABalloon*, FTimerHandle>> UsingBalloons;
 	//미니게임 시작 타이머핸들
 	FTimerHandle StartMinigameHandle;
+
+	//미니게임 데이터 테이블 데이터
+	TArray<FNumBalloon*> MinigameBalloonData;
+	UPROPERTY()
+	UDataTable* MinigameBalloonDataTable;
 };

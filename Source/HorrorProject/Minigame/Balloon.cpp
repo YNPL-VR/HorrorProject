@@ -4,23 +4,40 @@
 #include "Minigame/Balloon.h"
 #include "Components/WidgetComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "UI/BalloonWidget.h"
 
 // Sets default values
 ABalloon::ABalloon()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	BalloonMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BalloonMeshComponent"));
+	BalloonMeshComponent->SetCollisionProfileName(FName("NoCollision"));
+	BalloonMeshComponent->SetWorldScale3D(FVector(0.5f, 0.5f, 0.5f));
+	BalloonMeshComponent->SetLinearDamping(5.0f);
+	BalloonMeshComponent->SetAngularDamping(5.0f);
+	BalloonMeshComponent->SetMassOverrideInKg(NAME_None, 2.0f, true);
+	SetRootComponent(BalloonMeshComponent);
 
 	NumberWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("NumberWidgetComponent"));
 	NumberWidgetComponent->SetCollisionProfileName(FName("NoCollision"));
+	NumberWidgetComponent->SetVisibility(false);
+	NumberWidgetComponent->SetupAttachment(RootComponent);
+	NumberWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
+	static ConstructorHelpers::FClassFinder<UBalloonWidget> BalloonWidgetFinder(TEXT("/Game/LSJ/UI/WBP_BalloonNumber.WBP_BalloonNumber_C"));
+	if (BalloonWidgetFinder.Succeeded())
+	{
+		NumberWidgetComponent->SetWidgetClass(BalloonWidgetFinder.Class);
+		NumberWidgetComponent->SetDrawSize(FVector2D(1920, 1080));
+	}
 
-	BalloonMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BalloonMeshComponent"));
+	
 	
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereMeshFinder(TEXT("/Script/Engine.StaticMesh'/Engine/BasicShapes/Sphere.Sphere'"));
 	if (SphereMeshFinder.Succeeded())
 	{
 		BalloonMeshComponent->SetStaticMesh(SphereMeshFinder.Object);
-		BalloonMeshComponent->SetSimulatePhysics(true);
+		
 		//BalloonMeshComponent->SetEnableGravity()
 	}
 
@@ -30,14 +47,9 @@ ABalloon::ABalloon()
 		BalloonMeshComponent->SetMaterial(0, BalloonMaterialFinder.Object);
 	}
 
-	/*static ConstructorHelpers::FClassFinder<UUserWidget> HUD(TEXT("/Script/UMGEditor.WidgetBlueprint'/Game/LSJ/UI/WBP_HPHUD.WBP_HPHUD_C'"));
-	if (HUD.Succeeded())
-	{
-		NumberWidgetComponent->SetWidgetClass(HUD.Class);
-		NumberWidgetComponent->SetDrawSize(FVector2D(1920, 1080));
-	}
-
-	*/
+	
+	SpawnCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	
 }
 
 // Called when the game starts or when spawned
@@ -58,6 +70,11 @@ void ABalloon::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	//Áß·Â »ó¼â Èû
+	const float GravityForce = BalloonMeshComponent->GetMass() * 980.0f;
+	//ThrustForce
+	const FVector TotalForce = FVector(0.0f, 0.0f, GravityForce + ThrustForce);
+	BalloonMeshComponent->AddForce(TotalForce);
 }
 
 void ABalloon::SetColor(FVector InColor)
@@ -65,11 +82,22 @@ void ABalloon::SetColor(FVector InColor)
 	Color = InColor;
 }
 
-void ABalloon::ActivateToUse()
+void ABalloon::ActivateToUse(FVector Location, FRotator Rotation, float Speed)
 {
+	ThrustForce = Speed;
+	SetActorLocation(Location);
+	SetActorRotation(Rotation);
 	SetActorHiddenInGame(false);
-	//SetActorEnableCollision(ECollision)
+	BalloonMeshComponent->SetCollisionProfileName(FName("Balloon"));
 	SetActorTickEnabled(true);
+	BalloonMeshComponent->SetSimulatePhysics(true);
+	BalloonMeshComponent->SetEnableGravity(true);
+	UE_LOG(LogTemp, Warning, TEXT("z : %f"), Location.Z);
+	FTimerHandle t;
+	GetWorld()->GetTimerManager().SetTimer(t, [this]()
+		{
+			UE_LOG(LogTemp, Warning, TEXT("after z : %f"), GetActorLocation().Z);
+		}, 1.0f, false);
 }
 
 void ABalloon::DeactivateToSave()
@@ -77,5 +105,26 @@ void ABalloon::DeactivateToSave()
 	SetActorHiddenInGame(true);
 	//SetActorEnableCollision(ECollision)
 	SetActorTickEnabled(false);
+	BalloonMeshComponent->SetSimulatePhysics(false);
+	BalloonMeshComponent->SetCollisionProfileName(FName("NoCollision"));
+	BalloonMeshComponent->SetEnableGravity(false);
+}
+
+UStaticMesh* ABalloon::GetActorMesh() const
+{
+	return BalloonMeshComponent->GetStaticMesh().Get();
+}
+
+void ABalloon::SetNumberInWidget(int32 Num)
+{
+	if (UBalloonWidget* widget = Cast<UBalloonWidget>(NumberWidgetComponent->GetWidget()))
+	{
+		widget->SetTextNumber(Num);
+	}
+}
+
+void ABalloon::SetNumberWidgetVisible(bool bVisible)
+{
+	NumberWidgetComponent->SetVisibility(bVisible);
 }
 

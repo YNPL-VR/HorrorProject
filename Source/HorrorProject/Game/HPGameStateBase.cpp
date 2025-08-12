@@ -23,13 +23,13 @@ void AHPGameStateBase::BeginPlay()
 	const FString ContextString(TEXT(" AHPGameStateBase::BeginPlay"));
 	MinigameLevelDesignDataTable->GetAllRows(ContextString, MinigameLevelDesignData);
 
-	for (const FMinigameLevelDesign* RowData : MinigameLevelDesignData)
+	/*for (const FMinigameLevelDesign* RowData : MinigameLevelDesignData)
 	{
 		if (RowData)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("%f"), RowData->LevelUpSecondTimer);
 		}
-	}
+	}*/
 
 	GetWorld()->GetTimerManager().SetTimer(NextLevelTimerHandle,this,&AHPGameStateBase::TimeToNextLevel, GetLevelUpSecondTimer(CurrentMinigameLevel));
 }

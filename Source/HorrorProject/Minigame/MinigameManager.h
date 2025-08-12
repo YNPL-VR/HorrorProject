@@ -51,7 +51,9 @@ public:
 	void StopMinigame();
 	UFUNCTION()
 	void SpawnBalloon(FVector Location, FRotator Rotation, float Speed,int32 Number, ABalloon*   Balloon);
-
+	void DeactivateAllBalloon();
+	UFUNCTION()
+	void CheckCorrectBalloon(class ABalloon* Balloon);
 private:
 	//현재 미니게임 종류
 	EMinigame CurrentMinigame = EMinigame::NumBalloon;
@@ -75,9 +77,9 @@ private:
 	TArray<class ABalloonSpawnPoint*> BalloonSpawnPoints;
 	//풍선 오브젝트 풀
 	//풍선 스폰 - 타이머 필요 , 타이머를 풍선과 짝지어줌
-	TQueue<TPair<class ABalloon*, FTimerHandle>> BalloonQueue;
+	TQueue<class ABalloon*> BalloonQueue;
 	//사용중인 풍선
-	TArray<TPair<class ABalloon*, FTimerHandle>> UsingBalloons;
+	TArray<class ABalloon*> UsingBalloons;
 	//미니게임 시작 타이머핸들
 	FTimerHandle StartMinigameHandle;
 
@@ -85,4 +87,14 @@ private:
 	TArray<FNumBalloon*> MinigameBalloonData;
 	UPROPERTY()
 	UDataTable* MinigameBalloonDataTable;
+
+	//Todo : 잘못된 풍선을 격추시켰을 경우 - DeactivateAllBalloon()
+	//마지막 풍선을 격추시켰을 경우 - 배터리 충전
+
+	//Todo : 어떻게 옳은 풍선을 구분할 것인가? 순서를 저장해둠
+	//번호는 번호, 색깔은 색깔 enum , 나머지는 검사없이 건너뛰기
+	//EMinigame::NumBalloon 일경우 숫자 ++, 
+
+
+
 };

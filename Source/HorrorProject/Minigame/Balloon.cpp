@@ -17,6 +17,7 @@ ABalloon::ABalloon()
 	BalloonMeshComponent->SetLinearDamping(5.0f);
 	BalloonMeshComponent->SetAngularDamping(5.0f);
 	BalloonMeshComponent->SetMassOverrideInKg(NAME_None, 2.0f, true);
+	BalloonMeshComponent->SetNotifyRigidBodyCollision(true);
 	SetRootComponent(BalloonMeshComponent);
 
 	NumberWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("NumberWidgetComponent"));
@@ -62,7 +63,19 @@ void ABalloon::BeginPlay()
 		FName ParameterName = FName("Param");
 		DynamicMaterialInstance->SetVectorParameterValue(ParameterName, Color);
 		BalloonMeshComponent->SetMaterial(0, DynamicMaterialInstance);
+		BalloonMeshComponent->OnComponentHit.AddDynamic(this, &ABalloon::OnComponentHit);
 	}
+
+	
+}
+
+
+
+void ABalloon::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	HitBalloonWithWeapon.Unbind();
+
+	Super::EndPlay(EndPlayReason);
 }
 
 // Called every frame
@@ -119,6 +132,7 @@ void ABalloon::SetNumberInWidget(int32 Num)
 {
 	if (UBalloonWidget* widget = Cast<UBalloonWidget>(NumberWidgetComponent->GetWidget()))
 	{
+		ScreenBalloonNumber = Num;
 		widget->SetTextNumber(Num);
 	}
 }
@@ -126,5 +140,13 @@ void ABalloon::SetNumberInWidget(int32 Num)
 void ABalloon::SetNumberWidgetVisible(bool bVisible)
 {
 	NumberWidgetComponent->SetVisibility(bVisible);
+}
+
+void ABalloon::OnComponentHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	if (OtherActor->ActorHasTag(FName("Weapon")) && HitBalloonWithWeapon.IsBound())
+	{
+		HitBalloonWithWeapon.Execute(this);
+	}
 }
 

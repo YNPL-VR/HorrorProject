@@ -70,11 +70,10 @@ void AMinigameManager::BeginPlay()
 	for (int32 BalloonSpawnCount = 0; BalloonSpawnCount < MAXBALLOON; ++BalloonSpawnCount)
 	{
 		ABalloon* Balloon = GetWorld()->SpawnActor<ABalloon>(ABalloon::StaticClass());
+		Balloon->HitBalloonWithWeapon.BindUFunction(this,FName("CheckCorrectBalloon"));
 		Balloon->AddToRoot();
 		Balloon->DeactivateToSave();
-		FTimerHandle SpawnTimeHandle;
-		TPair<TObjectPtr<ABalloon>, FTimerHandle> NewPair(Balloon, SpawnTimeHandle);
-		BalloonQueue.Enqueue(NewPair);
+		BalloonQueue.Enqueue(Balloon);
 	}
 	
 	
@@ -86,19 +85,19 @@ void AMinigameManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 	while (!BalloonQueue.IsEmpty())
 	{
-		TPair<ABalloon*, FTimerHandle> NewPair;
-		BalloonQueue.Dequeue(NewPair);
-		NewPair.Key->RemoveFromRoot();
-		NewPair.Key->Destroy();
-		NewPair.Key = nullptr;
+		ABalloon* Balloon;
+		BalloonQueue.Dequeue(Balloon);
+		Balloon->RemoveFromRoot();
+		Balloon->Destroy();
+		Balloon = nullptr;
 	}
 
 	for (auto& Balloon : UsingBalloons)
 	{
-		GetWorld()->GetTimerManager().ClearTimer(Balloon.Value);
+		GetWorld()->GetTimerManager().ClearTimer(Balloon->SpawnTimerHandle);
 		
-		Balloon.Key->Destroy();
-		Balloon.Key = nullptr;
+		Balloon->Destroy();
+		Balloon = nullptr;
 	}
 
 	Super::EndPlay(EndPlayReason);
@@ -113,6 +112,9 @@ void AMinigameManager::Tick(float DeltaTime)
 
 void AMinigameManager::OnSpawnWeaponTimer()
 {
+	//미니게임 강제종료
+	StopMinigame();
+
 	GetWorld()->GetTimerManager().SetTimer(SpawnWeaponHandle,this, &AMinigameManager::ResetWeapon, SpawnTime,false);
 }
 
@@ -120,7 +122,8 @@ void AMinigameManager::OffSpawnWeaponTimer()
 {
 	GetWorld()->GetTimerManager().ClearTimer(SpawnWeaponHandle);
 	//미니게임 시작 타이머 작동
-	GetWorld()->GetTimerManager().SetTimer(StartMinigameHandle,this, &AMinigameManager::StartMinigame,1.0f,false);
+	//GetWorld()->GetTimerManager().SetTimer(StartMinigameHandle,this, &AMinigameManager::StartMinigame,1.0f,false);
+	StartMinigame();
 }
 
 void AMinigameManager::ResetWeapon()
@@ -139,8 +142,7 @@ void AMinigameManager::ResetWeapon()
 		}
 	}
 
-	//미니게임 강제종료
-	StopMinigame();
+	
 }
 
 void AMinigameManager::StartMinigame()
@@ -184,28 +186,27 @@ void AMinigameManager::StartMinigame()
 		BalloonNum = MinigameBalloonData[currentMinigameLevel]->BalloonNum;
 		BalloonSpeed = MinigameBalloonData[currentMinigameLevel]->BalloonSpeed;
 		LineRandomInterval = MinigameBalloonData[currentMinigameLevel]->LineRandomInterval;
-
-		//
-		
 		break;
 	}
 
-	//for문으로 또 감싸기 
-	//x값 / BalloonSpawnPoints.Num() + (x값 % BalloonSpawnPoints.Num() > 0) 만큼 진행
 	//풍선 수만큼 생성
 	int32 Count = 0;
+	int32 MaxCount = BalloonNum;
 	while (BalloonNum > 0)
 	{
 		//랜덤 스폰위치 결정
-		// 9 3 0 / 8 3 2 / 7 3 1 / 6 3 0 
 		if (Count % BalloonSpawnPoints.Num() == 0)
 		{
 			int ShowNumber = Count;
-			for (int32 BalloonPointCount = BalloonSpawnPoints.Num() - 1; BalloonPointCount >= 0; --BalloonPointCount)
+
+			//숫자 순서 대입
+			for (const auto& BalloonSpawner : BalloonSpawnPoints)
 			{
-				//등장할 숫자 번호
-				BalloonSpawnPoints[BalloonPointCount]->ScreenBalloonNumber = ++ShowNumber;
-				UE_LOG(LogTemp, Warning, TEXT("BalloonPointCount %d"), BalloonSpawnPoints[BalloonPointCount]->ScreenBalloonNumber);
+				BalloonSpawner->ScreenBalloonNumber = ++ShowNumber;
+			}
+			//랜덤으로 순서 섞기
+			for (int32 BalloonPointCount = BalloonSpawnPoints.Num() - 1; BalloonPointCount > 0; --BalloonPointCount)
+			{
 				int32 RandIdx = FMath::RandRange(0, BalloonSpawnPoints.Num() - 1);
 				BalloonSpawnPoints.Swap(BalloonPointCount, RandIdx);
 			}
@@ -218,31 +219,33 @@ void AMinigameManager::StartMinigame()
 				break;
 			}
 
+			if (MaxCount < BalloonSpawner->ScreenBalloonNumber)
+			{
+				continue;
+			}
+
 			//큐에서 풍선 꺼내기
-			TPair<ABalloon*, FTimerHandle> Balloon;
-			FTimerHandle SpawnHandle;
+			ABalloon* Balloon;
 			BalloonQueue.Dequeue(Balloon);
-			Balloon.Key->RemoveFromRoot();
+			Balloon->RemoveFromRoot();
 			//사용중인 목록에 추가
 			UsingBalloons.Add(Balloon);
 			//시간예측
-			int Z = Balloon.Key->GetActorMesh()->GetBounds().GetBox().GetSize().Z;
+			int Z = Balloon->GetActorMesh()->GetBounds().GetBox().GetSize().Z;
 			//속도로 풍선 길이만큼 지나는 예측 시간 
 			float WaitTime = (Z/2) / BalloonSpeed;
 			float RandomInterVal = FMath::RandRange(0.0f, LineRandomInterval);
 			//누적해야한다. 이전 스폰 시간을 가져와서 현재 스폰시간에 더해준다.
-			float CurrentBalloonSpawnTime = (BalloonSpawner->PreviousSpawnTime <= 0.0f ? 0.0f : BalloonSpawner->PreviousSpawnTime)+ WaitTime + RandomInterVal;
+			float CurrentBalloonSpawnTime = BalloonSpawner->PreviousSpawnTime+ WaitTime + RandomInterVal;
 			BalloonSpawner->PreviousSpawnTime = CurrentBalloonSpawnTime;
 
 			//랜덤시간 , 어떻게 1줄에 랜덤번호를 넣지? - BalloonSpawnPoints
 			// Todo : 어떻게 타이머에 인자를 받지? ABalloonSpawnPoint , Balloon
 			FTimerDelegate SpawnTimerDelegate;
 			SpawnTimerDelegate.BindUFunction(this, FName("SpawnBalloon"), BalloonSpawner->GetActorLocation(), BalloonSpawner->GetActorRotation(), BalloonSpeed,
-				BalloonSpawner->ScreenBalloonNumber, Balloon.Key);
-			GetWorld()->GetTimerManager().SetTimer(Balloon.Value, SpawnTimerDelegate, CurrentBalloonSpawnTime, false);
-			UE_LOG(LogTemp, Warning, TEXT("BalloonSpawner %d"), BalloonSpawner->ScreenBalloonNumber);
-			
-
+				BalloonSpawner->ScreenBalloonNumber, Balloon);
+			GetWorld()->GetTimerManager().SetTimer(Balloon->SpawnTimerHandle, SpawnTimerDelegate, CurrentBalloonSpawnTime, false);
+		
 			//해당 위치에 스폰
 			//게임에 따라 매터리얼 바꾸기
 			//데이터베이스에서 받아서 시간차 스폰 - 타이머
@@ -258,13 +261,48 @@ void AMinigameManager::StartMinigame()
 
 void AMinigameManager::StopMinigame()
 {
-	
+	DeactivateAllBalloon();
 }
 
 void AMinigameManager::SpawnBalloon(FVector Location, FRotator Rotation, float Speed, int32 Number, ABalloon* Balloon)
 {
-	Balloon->SetNumberWidgetVisible(true);
+	switch (CurrentMinigame)
+	{
+	case EMinigame::NumBalloon:
+		Balloon->SetNumberWidgetVisible(true);
+		break;
+	}
+	
 	Balloon->ActivateToUse(Location, Rotation, Speed*10.0f);
 	Balloon->SetNumberInWidget(Number);
+}
+//사용중인 풍선 전부 비활성화
+void AMinigameManager::DeactivateAllBalloon()
+{
+	//풍선 비활성화
+	for (auto& Balloon : UsingBalloons)
+	{
+		Balloon->SetNumberWidgetVisible(false);
+		Balloon->DeactivateToSave();
+		GetWorld()->GetTimerManager().ClearTimer(Balloon->SpawnTimerHandle);
+		BalloonQueue.Enqueue(Balloon);
+	}
+
+	//값 초기화
+	for (const auto& BalloonSpawner : BalloonSpawnPoints)
+	{
+		BalloonSpawner->ScreenBalloonNumber = 0;
+		BalloonSpawner->PreviousSpawnTime = 0.0f;
+	}
+}
+
+void AMinigameManager::CheckCorrectBalloon(class ABalloon* Balloon)
+{
+	switch (CurrentMinigame)
+	{
+	case EMinigame::NumBalloon:
+
+		break;
+	}
 }
 

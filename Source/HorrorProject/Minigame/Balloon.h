@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "Balloon.generated.h"
 
+DECLARE_DELEGATE_OneParam(FHitBalloonWithWeapon, ABalloon*)
+
 UCLASS()
 class HORRORPROJECT_API ABalloon : public AActor
 {
@@ -18,6 +20,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:	
 	// Called every frame
@@ -30,6 +33,15 @@ public:
 	class UStaticMesh* GetActorMesh() const;
 	void SetNumberInWidget(int32 Num);
 	void SetNumberWidgetVisible(bool bVisible);
+
+	//스폰 타이머 핸들
+	FTimerHandle SpawnTimerHandle;
+
+	//공격에 맞았을때 델리게이트
+	FHitBalloonWithWeapon HitBalloonWithWeapon;
+protected:
+	UFUNCTION()
+	void OnComponentHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 private:
 	UPROPERTY(EditAnywhere, Category="Widget", meta = (AllowPrivateAccess="true"))
 	class UWidgetComponent* NumberWidgetComponent;
@@ -42,4 +54,5 @@ private:
 	int32 ScreenBalloonNumber;
 	//속도값
 	float ThrustForce = 0.0f;
+
 };

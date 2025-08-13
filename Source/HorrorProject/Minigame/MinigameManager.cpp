@@ -126,7 +126,7 @@ void AMinigameManager::OffSpawnWeaponTimer()
 	//미니게임 시작
 	StartMinigame();
 }
-
+//Todo : 무기마다 리셋 설정 다를 예정
 void AMinigameManager::ResetWeapon()
 {
 	if (nullptr != CurrentWeapon)
@@ -134,11 +134,9 @@ void AMinigameManager::ResetWeapon()
 		USkeletalMeshComponent* FoundMesh = CurrentWeapon->FindComponentByClass<USkeletalMeshComponent>();
 		if (FoundMesh)
 		{
+			GetWorld()->GetTimerManager().ClearTimer(SpawnWeaponHandle);
 			FoundMesh->SetSimulatePhysics(false);
-		}
-		CurrentWeapon->SetActorLocationAndRotation(GetActorLocation(), GetActorRotation());
-		if (FoundMesh)
-		{
+			CurrentWeapon->SetActorLocationAndRotation(GetActorLocation(), GetActorRotation());
 			FoundMesh->SetSimulatePhysics(true);
 		}
 	}
@@ -229,7 +227,7 @@ void AMinigameManager::StartMinigame()
 			//큐에서 풍선 꺼내기
 			ABalloon* Balloon;
 			BalloonQueue.Dequeue(Balloon);
-			Balloon->RemoveFromRoot();
+			
 			//사용중인 목록에 추가
 			UsingBalloons.Add(Balloon);
 			//시간예측
@@ -272,7 +270,7 @@ void AMinigameManager::SpawnBalloon(FVector Location, FRotator Rotation, float S
 		Balloon->SetNumberWidgetVisible(true);
 		break;
 	}
-	
+	Balloon->RemoveFromRoot();
 	Balloon->ActivateToUse(Location, Rotation, Speed*10.0f);
 	Balloon->SetNumberInWidget(Number);
 }
@@ -310,18 +308,29 @@ void AMinigameManager::CheckCorrectBalloon(class ABalloon* Balloon)
 			{
 				Player->ChargeBattery(CurrentMinigameLevel);
 			}
+
+			//풍선 비활성화 후 풀에 넣기
+			Balloon->AddToRoot();
+			Balloon->DeactivateToSave();
+			BalloonQueue.Enqueue(Balloon);
+
+			ResetWeapon();
+			return;
 		}
 		//알맞은 숫자를 맞췄다면 패스
 		else if (CorrectBalloonNumber == Balloon->GetNumberInWidget())
 		{
 			++CorrectBalloonNumber;
+
+			//풍선 비활성화 후 풀에 넣기
+			Balloon->AddToRoot();
+			Balloon->DeactivateToSave();
+			BalloonQueue.Enqueue(Balloon);
 			return;
 		}
 		
 		//틀린 숫자를 맞췄다면 게임종료 
-		//Todo : 실패했다면 총을 원래 위치에 스폰할까?
 		StopMinigame();
-		
 		break;
 	}
 }

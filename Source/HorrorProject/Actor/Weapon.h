@@ -35,5 +35,5 @@ public:
 	FCatchWeaponDynamicMultiDelegate CatchWeaponDynamicMultiDelegate;
 	UPROPERTY(BlueprintAssignable, BlueprintCallable, Category = "Weapon")
 	FPutWeaponDynamicMultiDelegate PutWeaponDynamicMultiDelegate;
-
+	
 };

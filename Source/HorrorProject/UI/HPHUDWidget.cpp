@@ -20,6 +20,7 @@ void UHPHUDWidget::NativeConstruct()
 	if (AHPPawn* Player = Cast<AHPPawn>(PlayerPawn))
 	{
 		Player->UIConsumeBatteryDelegate.BindUFunction(this, FName("SetBatteryPercent"));
+		Player->UIChargeBatteryDelegate.BindUFunction(this, FName("SetBatteryPercent"));
 	}
 
 	TimeStrArray.Add("22:00");

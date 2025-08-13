@@ -11,6 +11,7 @@
 DECLARE_MULTICAST_DELEGATE(FSuccessConsumeBatteryDelegate);
 DECLARE_MULTICAST_DELEGATE(FFailedConsumeBatteryDelegate);
 DECLARE_DELEGATE_OneParam(FUIConsumeBatteryDelegate, float /* CurrentBattery */);
+DECLARE_DELEGATE_OneParam(FUIChargeBatteryDelegate, float /* CurrentBattery */);
 
 
 UCLASS()
@@ -50,6 +51,7 @@ public:
 public:
 	FSuccessConsumeBatteryDelegate SuccessConsumeBatteryDelegate;
 	FUIConsumeBatteryDelegate UIConsumeBatteryDelegate;
+	FUIChargeBatteryDelegate UIChargeBatteryDelegate;
 	FFailedConsumeBatteryDelegate FailedConsumeBatteryDelegate;
 private:
 	// Todo : 자유 시점을 위해 시도 했지만 실패

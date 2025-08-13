@@ -92,11 +92,16 @@ void AHPPawn::BeginPlay()
 
 void AHPPawn::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	Super::EndPlay(EndPlayReason);
+	
 
 	SuccessConsumeBatteryDelegate.Clear();
 	FailedConsumeBatteryDelegate.Clear();
-	UIConsumeBatteryDelegate.Unbind();
+	if(UIConsumeBatteryDelegate.IsBound())
+		UIConsumeBatteryDelegate.Unbind();
+	if (UIChargeBatteryDelegate.IsBound())
+		UIChargeBatteryDelegate.Unbind();
+
+	Super::EndPlay(EndPlayReason);
 }
 
 // Called every frame
@@ -159,8 +164,12 @@ void AHPPawn::ChargeBattery(int32 MinigameLevel)
 		//CurrentBattery 를 현재 레벨 난이도에 해당하는 충전배터리량 만큼 증가
 		//CurrentBattery 100 이상으로 높아지지 않게 처리
 		//Todo : MinigameLevel 값이 유효한지 검사
-		CurrentBattery = FMath::Max<float>(100.f, CurrentBattery + gs->GetChargeBattery(MinigameLevel));
-		// Todo : UI에서도 증가
+		CurrentBattery = FMath::Min<float>(100.f, CurrentBattery + gs->GetChargeBattery(MinigameLevel));
+
+		if (UIChargeBatteryDelegate.IsBound())
+		{
+			UIChargeBatteryDelegate.Execute(CurrentBattery);
+		}
 	}
 }
 

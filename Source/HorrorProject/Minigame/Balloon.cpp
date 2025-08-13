@@ -11,6 +11,9 @@ ABalloon::ABalloon()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+
+
 	BalloonMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BalloonMeshComponent"));
 	BalloonMeshComponent->SetCollisionProfileName(FName("NoCollision"));
 	BalloonMeshComponent->SetWorldScale3D(FVector(0.5f, 0.5f, 0.5f));
@@ -24,7 +27,8 @@ ABalloon::ABalloon()
 	NumberWidgetComponent->SetCollisionProfileName(FName("NoCollision"));
 	NumberWidgetComponent->SetVisibility(false);
 	NumberWidgetComponent->SetupAttachment(RootComponent);
-	NumberWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
+	NumberWidgetComponent->SetWidgetSpace(EWidgetSpace::World);
+	NumberWidgetComponent->SetRelativeLocation(FVector(50.0f,0.f,0.f));
 	static ConstructorHelpers::FClassFinder<UBalloonWidget> BalloonWidgetFinder(TEXT("/Game/LSJ/UI/WBP_BalloonNumber.WBP_BalloonNumber_C"));
 	if (BalloonWidgetFinder.Succeeded())
 	{
@@ -144,8 +148,19 @@ void ABalloon::SetNumberWidgetVisible(bool bVisible)
 
 void ABalloon::OnComponentHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
+	//Todo : 충돌이 풍선과 안되는 경우가 있다
+	//아마 sphere 콜리전이 없어서 또는 속도가 너무 빨라서
+
 	if (OtherActor->ActorHasTag(FName("Weapon")) && HitBalloonWithWeapon.IsBound())
 	{
+
+		HitBalloonWithWeapon.Execute(this);
+		
+	}
+	else if (OtherActor->ActorHasTag(FName("Deadzone")) && HitBalloonWithWeapon.IsBound())
+	{
+		//실패를 알리기 위해
+		ScreenBalloonNumber = -1;
 		HitBalloonWithWeapon.Execute(this);
 	}
 }

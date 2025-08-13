@@ -19,8 +19,6 @@ enum class EMinigame : uint8
 	BatBall
 };
 
-//Todo : 오브젝트풀링 - 풍선 관리
-
 UCLASS()
 class HORRORPROJECT_API AMinigameManager : public AActor
 {
@@ -57,6 +55,8 @@ public:
 private:
 	//현재 미니게임 종류
 	EMinigame CurrentMinigame = EMinigame::NumBalloon;
+	//현재 미니게임 난이도
+	int32 CurrentMinigameLevel = 0;
 
 	//무기를 스폰해 놓고 비활성화 시킨 후 해당 미니게임마다 쓰고있는 무기는 비활성화하고 해당 무기를 활성화
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -80,8 +80,6 @@ private:
 	TQueue<class ABalloon*> BalloonQueue;
 	//사용중인 풍선
 	TArray<class ABalloon*> UsingBalloons;
-	//미니게임 시작 타이머핸들
-	FTimerHandle StartMinigameHandle;
 
 	//미니게임 데이터 테이블 데이터
 	TArray<FNumBalloon*> MinigameBalloonData;
@@ -89,12 +87,10 @@ private:
 	UDataTable* MinigameBalloonDataTable;
 
 	//Todo : 잘못된 풍선을 격추시켰을 경우 - DeactivateAllBalloon()
-	//마지막 풍선을 격추시켰을 경우 - 배터리 충전
+	//마지막 풍선을 격추시켰을 경우 - CurrentMinigameLevel 에 맞추어 배터리 충전
 
 	//Todo : 어떻게 옳은 풍선을 구분할 것인가? 순서를 저장해둠
 	//번호는 번호, 색깔은 색깔 enum , 나머지는 검사없이 건너뛰기
 	//EMinigame::NumBalloon 일경우 숫자 ++, 
-
-
-
+	int32 CorrectBalloonNumber;
 };

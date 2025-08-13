@@ -8,6 +8,8 @@
 #include "BalloonSpawnPoint.h"
 #include "Balloon.h"
 #include <Game/HPGameStateBase.h>
+#include <Player/HPPawn.h>
+#include <Kismet/GameplayStatics.h>
 
 #define MAXBALLOON 20
 
@@ -121,8 +123,7 @@ void AMinigameManager::OnSpawnWeaponTimer()
 void AMinigameManager::OffSpawnWeaponTimer()
 {
 	GetWorld()->GetTimerManager().ClearTimer(SpawnWeaponHandle);
-	//미니게임 시작 타이머 작동
-	//GetWorld()->GetTimerManager().SetTimer(StartMinigameHandle,this, &AMinigameManager::StartMinigame,1.0f,false);
+	//미니게임 시작
 	StartMinigame();
 }
 
@@ -165,27 +166,28 @@ void AMinigameManager::StartMinigame()
 	//한 라인에서의 스폰 시간 차이값
 	float LineRandomInterval = 0.0f;
 	//현재 레벨 받기
-	int32 currentMinigameLevel = 0;
+	CurrentMinigameLevel = 0;
 	IHPMinigameDataInterface* gs = GetWorld()->GetGameState<IHPMinigameDataInterface>();
 	if (gs)
 	{
-		currentMinigameLevel = gs->GetMinigameLevel();
+		CurrentMinigameLevel = gs->GetMinigameLevel();
 	}
 
 	switch (CurrentMinigame)
 	{
 	case EMinigame::NumBalloon:
 		//난이도가 데이터베이스의 항목보다 많다면 //예외처리
-		if (MinigameBalloonData.Num() - 1 < currentMinigameLevel)
+		if (MinigameBalloonData.Num() - 1 < CurrentMinigameLevel)
 		{
 			UE_LOG(LogTemp, Error, TEXT("MinigameBalloonData.Num() - 1 < currentMinigameLevel"));
-			currentMinigameLevel = MinigameBalloonData.Num() - 1;
+			CurrentMinigameLevel = MinigameBalloonData.Num() - 1;
 		}
-
+		//풍선을 맞췄을때 시작 숫자
+		CorrectBalloonNumber = 1;
 		//레벨에 맞춰서 데이터 테이블에서 정보 가져오기
-		BalloonNum = MinigameBalloonData[currentMinigameLevel]->BalloonNum;
-		BalloonSpeed = MinigameBalloonData[currentMinigameLevel]->BalloonSpeed;
-		LineRandomInterval = MinigameBalloonData[currentMinigameLevel]->LineRandomInterval;
+		BalloonNum = MinigameBalloonData[CurrentMinigameLevel]->BalloonNum;
+		BalloonSpeed = MinigameBalloonData[CurrentMinigameLevel]->BalloonSpeed;
+		LineRandomInterval = MinigameBalloonData[CurrentMinigameLevel]->LineRandomInterval;
 		break;
 	}
 
@@ -238,9 +240,7 @@ void AMinigameManager::StartMinigame()
 			//누적해야한다. 이전 스폰 시간을 가져와서 현재 스폰시간에 더해준다.
 			float CurrentBalloonSpawnTime = BalloonSpawner->PreviousSpawnTime+ WaitTime + RandomInterVal;
 			BalloonSpawner->PreviousSpawnTime = CurrentBalloonSpawnTime;
-
-			//랜덤시간 , 어떻게 1줄에 랜덤번호를 넣지? - BalloonSpawnPoints
-			// Todo : 어떻게 타이머에 인자를 받지? ABalloonSpawnPoint , Balloon
+	
 			FTimerDelegate SpawnTimerDelegate;
 			SpawnTimerDelegate.BindUFunction(this, FName("SpawnBalloon"), BalloonSpawner->GetActorLocation(), BalloonSpawner->GetActorRotation(), BalloonSpeed,
 				BalloonSpawner->ScreenBalloonNumber, Balloon);
@@ -301,7 +301,27 @@ void AMinigameManager::CheckCorrectBalloon(class ABalloon* Balloon)
 	switch (CurrentMinigame)
 	{
 	case EMinigame::NumBalloon:
-
+		//마지막 숫자라면 배터리 충전
+		if (CorrectBalloonNumber == MinigameBalloonData[CurrentMinigameLevel]->BalloonNum)
+		{
+			//플레이어 찾기
+			APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
+			if (AHPPawn* Player = Cast<AHPPawn>(PlayerPawn))
+			{
+				Player->ChargeBattery(CurrentMinigameLevel);
+			}
+		}
+		//알맞은 숫자를 맞췄다면 패스
+		else if (CorrectBalloonNumber == Balloon->GetNumberInWidget())
+		{
+			++CorrectBalloonNumber;
+			return;
+		}
+		
+		//틀린 숫자를 맞췄다면 게임종료 
+		//Todo : 실패했다면 총을 원래 위치에 스폰할까?
+		StopMinigame();
+		
 		break;
 	}
 }

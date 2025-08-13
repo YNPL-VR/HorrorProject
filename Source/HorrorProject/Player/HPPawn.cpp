@@ -128,7 +128,7 @@ void AHPPawn::ConsumeBattery()
 		{
 			//CurrentBattery 를 현재 레벨 난이도에 해당하는 소모배터리량 만큼 감소
 			CurrentBattery -= ConsumeBattery;
-			// Todo : UI에서도 감소
+
 			if (SuccessConsumeBatteryDelegate.IsBound())
 			{
 				SuccessConsumeBatteryDelegate.Broadcast();
@@ -151,14 +151,15 @@ void AHPPawn::ConsumeBattery()
 	}
 }
 
-void AHPPawn::ChargeBattery()
+void AHPPawn::ChargeBattery(int32 MinigameLevel)
 {
 	IHPMinigameDataInterface* gs = GetWorld()->GetGameState< IHPMinigameDataInterface>();
 	if (gs)
 	{
 		//CurrentBattery 를 현재 레벨 난이도에 해당하는 충전배터리량 만큼 증가
 		//CurrentBattery 100 이상으로 높아지지 않게 처리
-		CurrentBattery = FMath::Max<float>(100.f, CurrentBattery + gs->GetChargeBattery(gs->GetMinigameLevel()));
+		//Todo : MinigameLevel 값이 유효한지 검사
+		CurrentBattery = FMath::Max<float>(100.f, CurrentBattery + gs->GetChargeBattery(MinigameLevel));
 		// Todo : UI에서도 증가
 	}
 }

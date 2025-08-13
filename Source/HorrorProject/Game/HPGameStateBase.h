@@ -7,7 +7,6 @@
 #include "Interface/HPMinigameDataInterface.h"
 #include "HPGameStateBase.generated.h"
 
-//Todo : 버튼 액터 -> 적 웨이포인트 뒤로 이동, 배터리 표시 UI -> 감소 증가
 /*
 *	1. vr에서 버튼 오브젝트 상호작용하여 
 *	2. 적 웨이포인트 뒤로 이동 후 에너지 소모 -> WaypointManager에서 적 웨이포인트 뒤로 이동, PlayerPawn에서 에너지 소모

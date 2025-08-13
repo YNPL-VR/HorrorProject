@@ -42,7 +42,7 @@ public:
 	UFUNCTION()
 	void ConsumeBattery();
 	//배터리 충전 함수
-	void ChargeBattery();
+	void ChargeBattery(int32 MinigameLevel);
 	FORCEINLINE float GetBattery() const { return CurrentBattery; }
 	FORCEINLINE void SetBattery(const float InBattery) {  CurrentBattery = InBattery; }
 	void Move(const FInputActionValue& Value);

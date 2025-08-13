@@ -32,6 +32,7 @@ public:
 	void DeactivateToSave();
 	class UStaticMesh* GetActorMesh() const;
 	void SetNumberInWidget(int32 Num);
+	inline int32 GetNumberInWidget() { return ScreenBalloonNumber; }
 	void SetNumberWidgetVisible(bool bVisible);
 
 	//스폰 타이머 핸들

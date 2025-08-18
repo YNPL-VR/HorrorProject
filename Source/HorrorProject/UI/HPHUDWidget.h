@@ -23,10 +23,9 @@ protected:
 	void SetTime();
 	UFUNCTION()
 	void SetVsisibleSuccessMsg();
-
-	void SetVsisibleFailMsg();
 	UFUNCTION()
-	void SetNextDay();
+	void SetVsisibleFailMsg();
+
 	UFUNCTION()
 	void SetDefaultTimeAndCurrentDay();
 

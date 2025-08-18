@@ -91,9 +91,9 @@ void AAWaypointManager::BeginPlay()
 
 void AAWaypointManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	Super::EndPlay(EndPlayReason);
 	GetWorld()->GetTimerManager().ClearTimer(PathHandle);
 	EnemyReachEndPointMutiDelegate.Clear();
+	Super::EndPlay(EndPlayReason);
 }
 
 void AAWaypointManager::Tick(float DeltaTime)

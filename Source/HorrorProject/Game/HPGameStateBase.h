@@ -51,12 +51,13 @@ public:
 	//다음 레벨업 시간 알려줄 함수
 	UFUNCTION()
 	void TimeToNextLevel();
+	UFUNCTION()
+	void SetNextDay();
 protected:
 	//다음날로 설정
 	void ToNextDay();
 	//다음날 설정 함수
-	UFUNCTION()
-	void SetNextDay();
+	
 private:
 	//UPROPERTY(VisibleAnywhere, Category = Path)
 	// MinigameLevelDesignDataTable 에서 UPROPERTY()로 데이터를 관리하기 때문에 UPROPERTY를 선언하면 가비지컬렉터가 서로 삭제를 하여 댕글리포인터가 된다.

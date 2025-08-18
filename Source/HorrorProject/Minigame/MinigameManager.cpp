@@ -97,11 +97,10 @@ void AMinigameManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	for (auto& Balloon : UsingBalloons)
 	{
 		GetWorld()->GetTimerManager().ClearTimer(Balloon->SpawnTimerHandle);
-		
+		Balloon->RemoveFromRoot();
 		Balloon->Destroy();
-		Balloon = nullptr;
 	}
-
+	UsingBalloons.Empty();
 	Super::EndPlay(EndPlayReason);
 }
 

@@ -100,6 +100,9 @@ float AHPGameStateBase::GetChargeBattery(int32 InMinigameLevel)
 // 다음 레벨 난이도로 설정
 void AHPGameStateBase::TimeToNextLevel()
 {
+	//마지막 날이 지났다면 리턴
+	if (CurrentDay > LASTDAY)
+		return;
 
 	GetWorld()->GetTimerManager().ClearTimer(NextLevelTimerHandle);
 	++CurrentMinigameLevel;
@@ -109,23 +112,17 @@ void AHPGameStateBase::TimeToNextLevel()
 		LevelUpAndNextTimeDynaicMultiDelegate.Broadcast();
 	}
 
-
 	//다음 시간 설정
 	if (CurrentMinigameLevel < MinigameLevelDesignData.Num())
 	{
 		GetWorld()->GetTimerManager().SetTimer(NextLevelTimerHandle, this, &AHPGameStateBase::TimeToNextLevel, GetLevelUpSecondTimer(CurrentMinigameLevel));
 	}
-	//종료시간이 되었다고 알림
+	//종료시간이 되면 다음날로 설정
 	else if (CurrentMinigameLevel == MinigameLevelDesignData.Num())
 	{
-		//마지막 날이 아니라면 기존 데이터 초기화
-		if (CurrentDay <= LASTDAY)
-		{
-			ToNextDay();
-			CurrentMinigameLevel = 0;
-			GetWorld()->GetTimerManager().SetTimer(NextLevelTimerHandle, this, &AHPGameStateBase::TimeToNextLevel, GetLevelUpSecondTimer(CurrentMinigameLevel) + 3.0f);
-		}
-
+		ToNextDay();
+		CurrentMinigameLevel = 0;
+		GetWorld()->GetTimerManager().SetTimer(NextLevelTimerHandle, this, &AHPGameStateBase::TimeToNextLevel, GetLevelUpSecondTimer(CurrentMinigameLevel) + 3.0f);
 
 		if (EndTimeDynaicMultiDelegate.IsBound())
 		{

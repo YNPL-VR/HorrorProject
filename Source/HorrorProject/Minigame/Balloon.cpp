@@ -15,17 +15,19 @@ ABalloon::ABalloon()
 	//콜리전 설정
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereCollisionComponent"));
 	SphereComponent->SetCollisionProfileName(FName("NoCollision"));
-	SphereComponent->SetSphereRadius(55.0f);
+	SphereComponent->SetLinearDamping(5.0f);
+	SphereComponent->SetAngularDamping(5.0f);
+	SphereComponent->SetSphereRadius(25.0f);
+	SphereComponent->SetMassOverrideInKg(NAME_None, 2.0f, true);
+	SphereComponent->SetNotifyRigidBodyCollision(true);
 	SetRootComponent(SphereComponent);
+
 	//메쉬 설정
 	BalloonMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BalloonMeshComponent"));
 	BalloonMeshComponent->SetCollisionProfileName(FName("NoCollision"));
 	BalloonMeshComponent->SetWorldScale3D(FVector(0.5f, 0.5f, 0.5f));
-	BalloonMeshComponent->SetLinearDamping(5.0f);
-	BalloonMeshComponent->SetAngularDamping(5.0f);
-	BalloonMeshComponent->SetMassOverrideInKg(NAME_None, 2.0f, true);
-	BalloonMeshComponent->SetNotifyRigidBodyCollision(true);
 	BalloonMeshComponent->SetupAttachment(RootComponent);
+
 	//숫자 위젯 설정
 	NumberWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("NumberWidgetComponent"));
 	NumberWidgetComponent->SetCollisionProfileName(FName("NoCollision"));
@@ -66,14 +68,14 @@ void ABalloon::BeginPlay()
 	Super::BeginPlay();
 
 	//다이나믹 매터리얼 설정
-	if (BalloonMeshComponent && BalloonMeshComponent->GetMaterial(0))
+	if (SphereComponent && BalloonMeshComponent->GetMaterial(0))
 	{
 		DynamicMaterialInstance = UMaterialInstanceDynamic::Create(BalloonMeshComponent->GetMaterial(0), this);
 		FName ParameterName = FName("Param");
 		DynamicMaterialInstance->SetVectorParameterValue(ParameterName, Color);
 		BalloonMeshComponent->SetMaterial(0, DynamicMaterialInstance);
 		//충돌 이벤트 함수등록
-		BalloonMeshComponent->OnComponentHit.AddDynamic(this, &ABalloon::OnComponentHit);
+		SphereComponent->OnComponentHit.AddDynamic(this, &ABalloon::OnComponentHit);
 	}
 
 	
@@ -94,10 +96,10 @@ void ABalloon::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	//중력 상쇄 힘
-	const float GravityForce = BalloonMeshComponent->GetMass() * 980.0f;
+	const float GravityForce = SphereComponent->GetMass() * 980.0f;
 	//위로 올라가는 힘
 	const FVector TotalForce = FVector(0.0f, 0.0f, GravityForce + ThrustForce);
-	BalloonMeshComponent->AddForce(TotalForce);
+	SphereComponent->AddForce(TotalForce);
 }
 
 void ABalloon::SetColor(FVector InColor)

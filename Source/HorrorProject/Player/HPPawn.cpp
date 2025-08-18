@@ -71,7 +71,7 @@ void AHPPawn::BeginPlay()
 			}
 		}
 	}
-	
+	//월드에 배치한 알람버튼 찾기
 	UWorld* World = GetWorld();
 	if (World)
 	{
@@ -86,9 +86,8 @@ void AHPPawn::BeginPlay()
 			break;
 		}
 	}
-
-
 }
+
 
 void AHPPawn::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
@@ -163,8 +162,8 @@ void AHPPawn::ChargeBattery(int32 MinigameLevel)
 	{
 		//CurrentBattery 를 현재 레벨 난이도에 해당하는 충전배터리량 만큼 증가
 		//CurrentBattery 100 이상으로 높아지지 않게 처리
-		//Todo : MinigameLevel 값이 유효한지 검사
-		CurrentBattery = FMath::Min<float>(100.f, CurrentBattery + gs->GetChargeBattery(MinigameLevel));
+		//MinigameLevel 값이 유효한지 검사
+		CurrentBattery = FMath::Min<float>(100.f, CurrentBattery + gs->GetChargeBattery(gs->GetMinigameLevel() < MinigameLevel ? gs->GetMinigameLevel() : MinigameLevel));
 
 		if (UIChargeBatteryDelegate.IsBound())
 		{

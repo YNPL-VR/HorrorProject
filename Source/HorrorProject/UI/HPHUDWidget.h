@@ -23,8 +23,13 @@ protected:
 	void SetTime();
 	UFUNCTION()
 	void SetVsisibleSuccessMsg();
-	UFUNCTION()
+
 	void SetVsisibleFailMsg();
+	UFUNCTION()
+	void SetNextDay();
+	UFUNCTION()
+	void SetDefaultTimeAndCurrentDay();
+
 protected:
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	class UProgressBar* BatteryBar;
@@ -32,6 +37,8 @@ protected:
 	class UTextBlock* TxtBatteryPercent;
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	class UTextBlock* TxtTime;
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	class UTextBlock* TxtDay;
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	class UTextBlock* TxtSuccessMsg;
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))

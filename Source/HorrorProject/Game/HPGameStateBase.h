@@ -28,7 +28,7 @@
  */
 
 
-
+#define LASTDAY 4
 
 UCLASS()
 class HORRORPROJECT_API AHPGameStateBase : public AGameStateBase, public IHPMinigameDataInterface
@@ -42,6 +42,8 @@ public:
 	virtual void BeginDestroy() override;
 
 	int32 GetMinigameLevel() override;
+	int32 GetCurrentDay() override;
+	
 	float GetLevelUpSecondTimer(int32 InMinigameLevel) override;
 	float GetConsumeAlarmBattery(int32 InMinigameLevel) override;
 	float GetChargeBattery(int32 InMinigameLevel) override;
@@ -49,6 +51,12 @@ public:
 	//다음 레벨업 시간 알려줄 함수
 	UFUNCTION()
 	void TimeToNextLevel();
+protected:
+	//다음날로 설정
+	void ToNextDay();
+	//다음날 설정 함수
+	UFUNCTION()
+	void SetNextDay();
 private:
 	//UPROPERTY(VisibleAnywhere, Category = Path)
 	// MinigameLevelDesignDataTable 에서 UPROPERTY()로 데이터를 관리하기 때문에 UPROPERTY를 선언하면 가비지컬렉터가 서로 삭제를 하여 댕글리포인터가 된다.
@@ -58,6 +66,7 @@ private:
 	UDataTable* MinigameLevelDesignDataTable;
 
 	int32 CurrentMinigameLevel;
+	int32 CurrentDay;
 
 	//다음 레벨업을 알려줄 타이머핸들
 	FTimerHandle NextLevelTimerHandle;

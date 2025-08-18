@@ -53,6 +53,8 @@ public:
 	FUIConsumeBatteryDelegate UIConsumeBatteryDelegate;
 	FUIChargeBatteryDelegate UIChargeBatteryDelegate;
 	FFailedConsumeBatteryDelegate FailedConsumeBatteryDelegate;
+protected:
+
 private:
 	// Todo : 자유 시점을 위해 시도 했지만 실패
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))

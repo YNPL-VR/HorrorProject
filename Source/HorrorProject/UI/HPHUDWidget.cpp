@@ -35,8 +35,10 @@ void UHPHUDWidget::NativeConstruct()
 	{
 		// 레벨이 증가할 때마다 시간 흐름 업데이트
 		gs->LevelUpAndNextTimeDynaicMultiDelegate.AddDynamic(this,&UHPHUDWidget::SetTime);
-		// 시간이 다 되었을 때 성공 메세지 표시
+		// 클리어인지 확인 후 클리어메시지 표시
 		gs->EndTimeDynaicMultiDelegate.AddDynamic(this, &UHPHUDWidget::SetVsisibleSuccessMsg);
+		// 종료시간이 되었을 때 다음날로 변경
+		gs->BeginNextDayMultiDelegate.AddDynamic(this, &UHPHUDWidget::SetDefaultTimeAndCurrentDay);
 	}
 	// 실패 메시지 표시
 	UWorld* World = GetWorld();
@@ -78,10 +80,37 @@ void UHPHUDWidget::SetTime()
 
 void UHPHUDWidget::SetVsisibleSuccessMsg()
 {
-	TxtSuccessMsg->SetVisibility(ESlateVisibility::Visible);
+	IHPMinigameDataInterface* gs = GetWorld()->GetGameState<IHPMinigameDataInterface>();
+	if (gs)
+	{
+		//게임 클리어인지 확인
+		if (LASTDAY < gs->GetCurrentDay())
+		{
+			TxtSuccessMsg->SetVisibility(ESlateVisibility::Visible);
+		}
+	}
 }
 
 void UHPHUDWidget::SetVsisibleFailMsg()
 {
 	TxtFailMsg->SetVisibility(ESlateVisibility::Visible);
+}
+
+void UHPHUDWidget::SetDefaultTimeAndCurrentDay()
+{
+	
+	IHPMinigameDataInterface* gs = GetWorld()->GetGameState<IHPMinigameDataInterface>();
+	if (gs)
+	{
+		//Day표시
+		FString DayStr = "Day ";
+		DayStr += FString::FromInt(gs->GetCurrentDay());
+		TxtDay->SetText(FText::FromString(DayStr));
+
+		//시간 초기화
+		FString TimeStr = "Time : ";
+		TimeStr += TimeStrArray[gs->GetMinigameLevel()];
+		TxtTime->SetText(FText::FromString(TimeStr));
+	
+	}
 }

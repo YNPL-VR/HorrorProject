@@ -314,8 +314,7 @@ void AMinigameManager::CheckCorrectBalloon(class ABalloon* Balloon)
 			Balloon->DeactivateToSave();
 			BalloonQueue.Enqueue(Balloon);
 
-			ResetWeapon();
-			return;
+			//ResetWeapon();
 		}
 		//알맞은 숫자를 맞췄다면 패스
 		else if (CorrectBalloonNumber == Balloon->GetNumberInWidget())
@@ -329,8 +328,10 @@ void AMinigameManager::CheckCorrectBalloon(class ABalloon* Balloon)
 			return;
 		}
 		
-		//틀린 숫자를 맞췄다면 게임종료 
+		//틀린 숫자 or 마지막 풍선을 맞췄다면 게임종료 
 		StopMinigame();
+		//다시 게임 시작
+		StartMinigame();
 		break;
 	}
 }

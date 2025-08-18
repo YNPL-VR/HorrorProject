@@ -45,14 +45,19 @@ protected:
 	//웨이포인트에 도착했을때의 함수명
 	UFUNCTION()
 	void ArrivedOnHGWaypoint();
+
+	UFUNCTION()
+	void ResetWaypoint();
 public:
 	FEnemyReachEndPointMutiDelegate EnemyReachEndPointMutiDelegate;
 private:
 	UPROPERTY(EditAnywhere, Category = Path, meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<class AHGCharacterEnemy> TargetClass;
+	TArray<TSubclassOf<class AHGCharacterEnemy>> TargetClassArr;
 
 	UPROPERTY()
-	TObjectPtr<class AHGCharacterEnemy> Target;
+	TArray<TObjectPtr<class AHGCharacterEnemy>> TargetArr;
+
+	TObjectPtr<class AHGCharacterEnemy> CurrentTarget;
 
 	UPROPERTY(EditAnywhere, Category = Path, meta = (AllowPrivateAccess = "true", DisplayName = "BP_Waypoint"))
 	TArray<TObjectPtr<class AWaypoint>> Path;

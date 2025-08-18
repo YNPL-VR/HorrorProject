@@ -45,22 +45,29 @@ void AAWaypointManager::BeginPlay()
 		}
 	}
 
-	//처음 WayPoint 이동
-	if (Path.Num() > 0 && nullptr != TargetClass)
+	//몬스터 생성 및 리셋하여 웨이포인트 시작
+	if (Path.Num() > 0 && 0 < TargetClassArr.Num())
 	{
 		if (nullptr != Path[0])
 		{
-			FActorSpawnParameters spawnParams;
-			Target = GetWorld()->SpawnActor<AHGCharacterEnemy>(TargetClass, Path[0]->GetActorLocation(), Path[0]->GetActorRotation(), spawnParams);
-			CurrentWaypoint = 0;
-			if (Path.Num() > 1)
+			//
+			for (int32 SpawnCount = 0; SpawnCount < TargetClassArr.Num(); ++SpawnCount)
 			{
-				AHGEnemyAIController* controller = Cast<AHGEnemyAIController>(Target->GetController());
-				controller->AlreadyAtGoalMultiDelegate.AddDynamic(this, &AAWaypointManager::ArrivedOnHGWaypoint); //(this, FName("ArrivedOnHGWaypoint"));
-				// FMath::FRandRange( 0 , 0 ) 일때 SetTimer가 작동하지 않는 버그 발생
-				//const float RandomWaitTime = FMath::FRandRange(Path[CurrentWaypoint]->GetMinWaitSecond(), Path[CurrentWaypoint]->GetMaxWaitSecond());
-				GetWorld()->GetTimerManager().SetTimer(PathHandle, this, &AAWaypointManager::ArrivedOnHGWaypoint, WaypointInfo[0], false);
+				FActorSpawnParameters spawnParams;
+				TargetArr.Add(GetWorld()->SpawnActor<AHGCharacterEnemy>(TargetClassArr[SpawnCount], Path[0]->GetActorLocation(), Path[0]->GetActorRotation(), spawnParams));
+				TargetArr[SpawnCount]->SetActorHiddenInGame(true);
+				/* 미사용 : 걸어다닐때의 로직  - 순간이동 로직을 사용해서
+				if (Path.Num() > 1)
+				{
+					//AHGEnemyAIController* controller = Cast<AHGEnemyAIController>(TargetArr[SpawnCount]->GetController());
+					//controller->AlreadyAtGoalMultiDelegate.AddDynamic(this, &AAWaypointManager::ArrivedOnHGWaypoint); //(this, FName("ArrivedOnHGWaypoint"));
+					// FMath::FRandRange( 0 , 0 ) 일때 SetTimer가 작동하지 않음
+					//const float RandomWaitTime = FMath::FRandRange(Path[CurrentWaypoint]->GetMinWaitSecond(), Path[CurrentWaypoint]->GetMaxWaitSecond());
+				}
+				*/
 			}
+			CurrentTarget = TargetArr[0];
+			ResetWaypoint();
 		}
 	}
 
@@ -70,10 +77,13 @@ void AAWaypointManager::BeginPlay()
 	{
 		Player->SuccessConsumeBatteryDelegate.AddUFunction(this, FName("MovePreviousWaypointTarget"));
 	}
-	//게임 클리어시 적 이동하지 않게 만들기
+	
 	if (IHPMinigameDataInterface* gs = Cast<IHPMinigameDataInterface>(GetWorld()->GetGameState()))
 	{
-		gs->EndTimeDynaicMultiDelegate.AddDynamic(this,&AAWaypointManager::SuccessEndGame);
+		//다음날 변경시 웨이포인트 리셋 및 적 변경
+		gs->BeginNextDayMultiDelegate.AddDynamic(this,&AAWaypointManager::ResetWaypoint);
+		//시간 마감시 적 이동하지 않게 만들기
+		gs->EndTimeDynaicMultiDelegate.AddDynamic(this, &AAWaypointManager::SuccessEndGame);
 	}
 }
 
@@ -93,7 +103,7 @@ void AAWaypointManager::Tick(float DeltaTime)
 
 void AAWaypointManager::MovePreviousWaypointTarget()
 {
-	if (nullptr == Target || CurrentWaypoint <= 0)
+	if (nullptr == CurrentTarget || CurrentWaypoint <= 0)
 	{
 		return;
 	}
@@ -129,11 +139,11 @@ void AAWaypointManager::MoveWaypointTarget(int32 InWaypoint)
 	CurrentWaypoint = InWaypoint;
 
 	//적이 Waypoint 이동
-	if (Target)
+	if (CurrentTarget)
 	{
-		Target->SetActorLocation(Path[InWaypoint]->GetActorLocation());
-		Target->SetActorRotation(Path[InWaypoint]->GetActorRotation());
-		Target->SetState(EStateEnemy::Waiting);
+		CurrentTarget->SetActorLocation(Path[InWaypoint]->GetActorLocation());
+		CurrentTarget->SetActorRotation(Path[InWaypoint]->GetActorRotation());
+		CurrentTarget->SetState(EStateEnemy::Waiting);
 	}
 
 	//마지막 웨이포인트에 도착했다면 끝을 알림
@@ -162,4 +172,22 @@ void AAWaypointManager::ArrivedOnHGWaypoint()
 	
 	//적이 Waypoint로 이동
 	MoveWaypointTarget(CurrentWaypoint + 1);
+}
+
+//Day가 넘어갈때 초기화 해줄 함수
+void AAWaypointManager::ResetWaypoint()
+{
+	CurrentWaypoint = 0;
+	//Day에 해당하는 몬스터 적용
+	if (IHPMinigameDataInterface* gs = Cast<IHPMinigameDataInterface>(GetWorld()->GetGameState()))
+	{
+		if (TargetArr.IsValidIndex(gs->GetCurrentDay() - 1))
+		{
+			CurrentTarget->SetActorHiddenInGame(true);
+			CurrentTarget = TargetArr[gs->GetCurrentDay() - 1];
+			CurrentTarget->SetActorHiddenInGame(false);
+		}
+	}
+	//처음 웨이포인트부터 출발
+	GetWorld()->GetTimerManager().SetTimer(PathHandle, this, &AAWaypointManager::ArrivedOnHGWaypoint, WaypointInfo[0], false);
 }

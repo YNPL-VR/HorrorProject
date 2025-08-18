@@ -44,6 +44,8 @@ protected:
 	UFUNCTION()
 	void OnComponentHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 private:
+	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"), Category = "Components")
+	class USphereComponent* SphereComponent;
 	UPROPERTY(EditAnywhere, Category="Widget", meta = (AllowPrivateAccess="true"))
 	class UWidgetComponent* NumberWidgetComponent;
 	UPROPERTY(EditAnywhere, Category = "Mesh", meta = (AllowPrivateAccess = "true"))

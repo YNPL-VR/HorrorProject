@@ -4,6 +4,7 @@
 #include "Minigame/Balloon.h"
 #include "Components/WidgetComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SphereComponent.h"
 #include "UI/BalloonWidget.h"
 
 // Sets default values
@@ -11,9 +12,12 @@ ABalloon::ABalloon()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
-
-
+	//콜리전 설정
+	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereCollisionComponent"));
+	SphereComponent->SetCollisionProfileName(FName("NoCollision"));
+	SphereComponent->SetSphereRadius(55.0f);
+	SetRootComponent(SphereComponent);
+	//메쉬 설정
 	BalloonMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BalloonMeshComponent"));
 	BalloonMeshComponent->SetCollisionProfileName(FName("NoCollision"));
 	BalloonMeshComponent->SetWorldScale3D(FVector(0.5f, 0.5f, 0.5f));
@@ -21,10 +25,11 @@ ABalloon::ABalloon()
 	BalloonMeshComponent->SetAngularDamping(5.0f);
 	BalloonMeshComponent->SetMassOverrideInKg(NAME_None, 2.0f, true);
 	BalloonMeshComponent->SetNotifyRigidBodyCollision(true);
-	SetRootComponent(BalloonMeshComponent);
-
+	BalloonMeshComponent->SetupAttachment(RootComponent);
+	//숫자 위젯 설정
 	NumberWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("NumberWidgetComponent"));
 	NumberWidgetComponent->SetCollisionProfileName(FName("NoCollision"));
+	NumberWidgetComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	NumberWidgetComponent->SetVisibility(false);
 	NumberWidgetComponent->SetupAttachment(RootComponent);
 	NumberWidgetComponent->SetWidgetSpace(EWidgetSpace::World);
@@ -42,8 +47,6 @@ ABalloon::ABalloon()
 	if (SphereMeshFinder.Succeeded())
 	{
 		BalloonMeshComponent->SetStaticMesh(SphereMeshFinder.Object);
-		
-		//BalloonMeshComponent->SetEnableGravity()
 	}
 
 	static ConstructorHelpers::FObjectFinder<UMaterialInstance> BalloonMaterialFinder(TEXT("/Game/LSJ/Material/MI_Balloon.MI_Balloon"));
@@ -61,12 +64,15 @@ ABalloon::ABalloon()
 void ABalloon::BeginPlay()
 {
 	Super::BeginPlay();
+
+	//다이나믹 매터리얼 설정
 	if (BalloonMeshComponent && BalloonMeshComponent->GetMaterial(0))
 	{
 		DynamicMaterialInstance = UMaterialInstanceDynamic::Create(BalloonMeshComponent->GetMaterial(0), this);
 		FName ParameterName = FName("Param");
 		DynamicMaterialInstance->SetVectorParameterValue(ParameterName, Color);
 		BalloonMeshComponent->SetMaterial(0, DynamicMaterialInstance);
+		//충돌 이벤트 함수등록
 		BalloonMeshComponent->OnComponentHit.AddDynamic(this, &ABalloon::OnComponentHit);
 	}
 
@@ -89,7 +95,7 @@ void ABalloon::Tick(float DeltaTime)
 
 	//중력 상쇄 힘
 	const float GravityForce = BalloonMeshComponent->GetMass() * 980.0f;
-	//ThrustForce
+	//위로 올라가는 힘
 	const FVector TotalForce = FVector(0.0f, 0.0f, GravityForce + ThrustForce);
 	BalloonMeshComponent->AddForce(TotalForce);
 }
@@ -98,17 +104,19 @@ void ABalloon::SetColor(FVector InColor)
 {
 	Color = InColor;
 }
-
+//활성화 설정
 void ABalloon::ActivateToUse(FVector Location, FRotator Rotation, float Speed)
 {
 	ThrustForce = Speed;
 	SetActorLocation(Location);
 	SetActorRotation(Rotation);
 	SetActorHiddenInGame(false);
-	BalloonMeshComponent->SetCollisionProfileName(FName("Balloon"));
+	SphereComponent->SetCollisionProfileName(FName("Balloon"));
 	SetActorTickEnabled(true);
-	BalloonMeshComponent->SetSimulatePhysics(true);
-	BalloonMeshComponent->SetEnableGravity(true);
+	SphereComponent->SetSimulatePhysics(true);
+	SphereComponent->SetEnableGravity(true);
+
+	//Todo : 풍선 테스트 지울것
 	UE_LOG(LogTemp, Warning, TEXT("z : %f"), Location.Z);
 	FTimerHandle t;
 	GetWorld()->GetTimerManager().SetTimer(t, [this]()
@@ -116,22 +124,21 @@ void ABalloon::ActivateToUse(FVector Location, FRotator Rotation, float Speed)
 			UE_LOG(LogTemp, Warning, TEXT("after z : %f"), GetActorLocation().Z);
 		}, 1.0f, false);
 }
-
+//비활성화 설정
 void ABalloon::DeactivateToSave()
 {
 	SetActorHiddenInGame(true);
-	//SetActorEnableCollision(ECollision)
 	SetActorTickEnabled(false);
-	BalloonMeshComponent->SetSimulatePhysics(false);
-	BalloonMeshComponent->SetCollisionProfileName(FName("NoCollision"));
-	BalloonMeshComponent->SetEnableGravity(false);
+	SphereComponent->SetSimulatePhysics(false);
+	SphereComponent->SetCollisionProfileName(FName("NoCollision"));
+	SphereComponent->SetEnableGravity(false);
 }
 
 UStaticMesh* ABalloon::GetActorMesh() const
 {
 	return BalloonMeshComponent->GetStaticMesh().Get();
 }
-
+//위젯에 번호표시
 void ABalloon::SetNumberInWidget(int32 Num)
 {
 	if (UBalloonWidget* widget = Cast<UBalloonWidget>(NumberWidgetComponent->GetWidget()))
@@ -140,7 +147,7 @@ void ABalloon::SetNumberInWidget(int32 Num)
 		widget->SetTextNumber(Num);
 	}
 }
-
+//위젯 표시 설정
 void ABalloon::SetNumberWidgetVisible(bool bVisible)
 {
 	NumberWidgetComponent->SetVisibility(bVisible);
@@ -148,9 +155,9 @@ void ABalloon::SetNumberWidgetVisible(bool bVisible)
 
 void ABalloon::OnComponentHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	//Todo : 충돌이 풍선과 안되는 경우가 있다
+	//Todo : 충돌이 풍선과 안되는 경우가 있다 집에서 테스트 해봐야함
 	//아마 sphere 콜리전이 없어서 또는 속도가 너무 빨라서
-
+	//충돌 알림
 	if (OtherActor->ActorHasTag(FName("Weapon")) && HitBalloonWithWeapon.IsBound())
 	{
 

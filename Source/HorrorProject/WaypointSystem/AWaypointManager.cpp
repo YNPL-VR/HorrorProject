@@ -1,19 +1,21 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "WaypointSystem/AWaypointManager.h"
 #include "WaypointSystem/Waypoint.h"
 #include "Enemy/HGCharacterEnemy.h"
 #include "Enemy/HGEnemyAIController.h"
+#include "Player/HPPawn.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 AAWaypointManager::AAWaypointManager()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
-	currentWaypoint = 0;
+	CurrentWaypoint = 0;
 
-	//DataTable �ʱ�ȭ
+	//DataTable 초기화
 	static ConstructorHelpers::FObjectFinder<UDataTable> NPCWaypointObject(TEXT("/Game/Datatable/NPCWaypoint"));
 	if (NPCWaypointObject.Succeeded())
 	{
@@ -29,33 +31,59 @@ void AAWaypointManager::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	const FString ContextString(TEXT("ItemDataTable Context"));
-	FNPCWaypointStruct* NPCWaypointStruct = NPCWaypointDataTable->FindRow<FNPCWaypointStruct>(FName("Time"), ContextString);
+	//각 Waypoint 데이터 저장
+	const FString ContextString(TEXT("AAWaypointManager::BeginPlay"));
+	TArray<FNPCWaypointStruct*> AllRows;
+	NPCWaypointDataTable->GetAllRows(ContextString, AllRows);
+	for (const FNPCWaypointStruct* RowData : AllRows)
+	{
+		if (RowData)
+		{
+			WaypointInfo.Add(RowData->WaitTime);
+		}
+	}
 
-	NPCWaypointWaitTime.Add(NPCWaypointStruct->Waypoint0to1);
-	NPCWaypointWaitTime.Add(NPCWaypointStruct->Waypoint1to2);
-	NPCWaypointWaitTime.Add(NPCWaypointStruct->Waypoint2to3);
-	NPCWaypointWaitTime.Add(NPCWaypointStruct->Waypoint3to4);
-	NPCWaypointWaitTime.Add(NPCWaypointStruct->Waypoint4to5);
-	NPCWaypointWaitTime.Add(NPCWaypointStruct->Waypoint5to6);
-
-	//ó�� WayPoint �̵�
+	//처음 WayPoint 이동
 	if (Path.Num() > 0 && nullptr != TargetClass)
 	{
 		if (nullptr != Path[0])
 		{
 			FActorSpawnParameters spawnParams;
 			Target = GetWorld()->SpawnActor<AHGCharacterEnemy>(TargetClass, Path[0]->GetActorLocation(), Path[0]->GetActorRotation(), spawnParams);
-			currentWaypoint = 0;
+			CurrentWaypoint = 0;
 			if (Path.Num() > 1)
 			{
 				AHGEnemyAIController* controller = Cast<AHGEnemyAIController>(Target->GetController());
 				controller->AlreadyAtGoalMultiDelegate.AddDynamic(this, &AAWaypointManager::ArrivedOnHGWaypoint); //(this, FName("ArrivedOnHGWaypoint"));
-				// FMath::FRandRange( 0 , 0 ) �϶� SetTimer�� �۵����� �ʴ� ���� �߻�
-				//const float RandomWaitTime = FMath::FRandRange(Path[currentWaypoint]->GetMinWaitSecond(), Path[currentWaypoint]->GetMaxWaitSecond());
-				GetWorld()->GetTimerManager().SetTimer(PathHandle, this, &AAWaypointManager::ArrivedOnHGWaypoint, NPCWaypointWaitTime[0], false);
+				// FMath::FRandRange( 0 , 0 ) 일때 SetTimer가 작동하지 않는 버그 발생
+				//const float RandomWaitTime = FMath::FRandRange(Path[CurrentWaypoint]->GetMinWaitSecond(), Path[CurrentWaypoint]->GetMaxWaitSecond());
+				GetWorld()->GetTimerManager().SetTimer(PathHandle, this, &AAWaypointManager::ArrivedOnHGWaypoint, WaypointInfo[0], false);
 			}
 		}
+	}
+
+	////알람버튼 눌린것을 알려주는 델리게이트 등록 -> 플레이어에서 결과를 알려주는 것으로 대체
+	//UWorld* World = GetWorld();
+	//if (World)
+	//{
+	//	//#include "EngineUtils.h"
+	//	for (TActorIterator<AAlarmbutton> It(World); It; ++It)
+	//	{
+	//		AAlarmbutton* Alarmbutton = *It;
+	//		if (Alarmbutton)
+	//		{
+	//			Alarmbutton->OnAlarmbuttonDelegate.AddUFunction(this, FName("MovePreviousWaypointTarget"));
+	//		}
+
+	//		break;
+	//	}
+	//}
+
+	//알람 성공 델리게이트 등록
+	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
+	if (AHPPawn* Player = Cast<AHPPawn>(PlayerPawn))
+	{
+		Player->SuccessConsumeBatteryDelegate.AddUFunction(this, FName("MovePreviousWaypointTarget"));
 	}
 }
 
@@ -73,6 +101,19 @@ void AAWaypointManager::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
+void AAWaypointManager::MovePreviousWaypointTarget()
+{
+	if (nullptr == Target || CurrentWaypoint <= 0)
+	{
+		return;
+	}
+
+	GetWorld()->GetTimerManager().ClearTimer(PathHandle);
+
+	//웨이포인트 뒤로 이동
+	MoveWaypointTarget(CurrentWaypoint-1);
+}
+
 //#if WITH_EDITOR
 //void AAWaypointManager::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 //{
@@ -87,93 +128,36 @@ void AAWaypointManager::Tick(float DeltaTime)
 //}
 //#endif
 
-//Waypoint �� �������� �� �����ϴ� �Լ�
+void AAWaypointManager::MoveWaypointTarget(int32 InWaypoint)
+{
+	//현재 Waypoint 갱신
+	CurrentWaypoint = InWaypoint;
+
+	//이동
+	if (Target)
+	{
+		Target->SetActorLocation(Path[InWaypoint]->GetActorLocation());
+		Target->SetActorRotation(Path[InWaypoint]->GetActorRotation());
+		Target->SetState(EStateEnemy::Waiting);
+	}
+
+	//n 초 뒤 다음 Waypoint 로 이동 
+	if (Path.Num() > InWaypoint + 1 && WaypointInfo.Num() > InWaypoint)
+	{
+		//const float RandomWaitTime = FMath::FRandRange(Path[CurrentWaypoint]->GetMinWaitSecond(), Path[CurrentWaypoint]->GetMaxWaitSecond());
+		GetWorld()->GetTimerManager().SetTimer(PathHandle, this, &AAWaypointManager::ArrivedOnHGWaypoint, WaypointInfo[InWaypoint], false);
+	}
+	else if (Path.Num() > InWaypoint + 1 && WaypointInfo.Num() <= InWaypoint)
+	{
+		UE_LOG(LogTemp, Error, TEXT("WaitTime 보다 Waypoint가 많아서 누락된 Waypoint가 있습니다."));
+	}
+}
+
+//Waypoint 에 도착했을 때 실행하는 함수
 void AAWaypointManager::ArrivedOnHGWaypoint()
 {
 	GetWorld()->GetTimerManager().ClearTimer(PathHandle);
 	
-	//���� Waypoint ����
-	++currentWaypoint;
-
-	
-	
-	//�̵�
-	if (Target)
-	{
-		Target->SetActorLocation(Path[currentWaypoint]->GetActorLocation());
-		Target->SetActorRotation(Path[currentWaypoint]->GetActorRotation());
-		Target->SetState(EStateEnemy::Waiting);
-	}
-
-	//n �� �� ���� Waypoint �� �̵� 
-	if (WaypointInfo.Num() > currentWaypoint + 1)
-	{
-		//const float RandomWaitTime = FMath::FRandRange(Path[currentWaypoint]->GetMinWaitSecond(), Path[currentWaypoint]->GetMaxWaitSecond());
-		GetWorld()->GetTimerManager().SetTimer(PathHandle, this, &AAWaypointManager::ArrivedOnHGWaypoint, NPCWaypointWaitTime[currentWaypoint], false);
-	}
+	//이동
+	MoveWaypointTarget(CurrentWaypoint + 1);
 }
-
-
-void AAWaypointManager::UpdateWaypointInfo()
-{
-	WaypointInfo.Empty();
-
-
-
-	{
-		/*
-		const FString ContextString(TEXT("ItemDataTable Context"));
-		FNPCWaypointStruct* NPCWaypointStruct = NPCWaypointDataTable->FindRow<FNPCWaypointStruct>(FName("Time"), ContextString);
-
-		if (Path.Num() > 0)
-		{
-			WaypointInfo.Reserve(Path.Num());
-			switch (Path.Num())
-			{
-			case 6:
-				WaypointInfo[5]=(NPCWaypointStruct->Waypoint5to6);
-			case 5:
-				WaypointInfo[4] = (NPCWaypointStruct->Waypoint4to5);
-			case 4:
-				WaypointInfo[3] = (NPCWaypointStruct->Waypoint3to4);
-			case 3:
-				WaypointInfo[2] = (NPCWaypointStruct->Waypoint2to3);
-			case 2:
-				WaypointInfo[1]= (NPCWaypointStruct->Waypoint1to2);
-			case 1:
-				WaypointInfo[0]= (NPCWaypointStruct->Waypoint0to1);
-			}
-		}*/
-
-		UE_LOG(LogTemp, Warning, TEXT("NPCWaypointObjectDataTable Succeed!"));
-	}
-
-	
-
-	/*for (const AWaypoint* Waypoint : Path)
-	{
-		if (Waypoint)
-		{
-			FWaypointInfo2 WaypointStruct;
-			WaypointStruct.MaxWaitSecond = Waypoint->GetMaxWaitSecond();
-			WaypointStruct.MinWaitSecond = Waypoint->GetMinWaitSecond();
-			WaypointStruct.Speed = Waypoint->GetSpeed();
-			WaypointInfo.Add(WaypointStruct);
-		}
-	}*/
-}
-
-//void AAWaypointManager::MoveToNextWaypoint()
-//{
-//	UE_LOG(LogTemp, Warning, TEXT("MoveToNextWaypoint"));
-//	if (Path.Num() > currentWaypoint + 1 && Target)
-//	{
-//		AHGEnemyAIController* controller = Cast<AHGEnemyAIController>(Target->GetController());
-//		if (controller)
-//		{
-//			Target->SetState(EStateEnemy::Running);
-//			Target->SetWalkSpeed(Path[currentWaypoint]->GetSpeed());
-//			controller->ToDestination(Path[currentWaypoint + 1]->GetActorLocation());
-//		}
-//	}
-//}

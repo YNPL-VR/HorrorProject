@@ -11,7 +11,7 @@ AColorDisplayActor::AColorDisplayActor()
 
 	//색을 보여줄 컴포넌트
 	DisplayMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DisplayMeshComponent"));
-	//DisplayMeshComponent->SetWorldScale3D(FVector(0.5f, 0.5f, 0.5f));
+	DisplayMeshComponent->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	SetRootComponent(DisplayMeshComponent);
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshFinder(TEXT("/Script/Engine.StaticMesh'/Game/LevelPrototyping/Meshes/SM_ChamferCube.SM_ChamferCube'"));
@@ -45,9 +45,9 @@ void AColorDisplayActor::BeginPlay()
 
 	FTimerHandle t;
 	FTimerDelegate td;
-	td.BindUFunction(this, FName("SetDisplayColor"), FVector(0, 0, 0));
-	GetWorld()->GetTimerManager().SetTimer(t, td, 1.0f,false);
-	td.BindUFunction(this, FName("SetDisplayColor"), FVector(1, 1, 1));
+	/*td.BindUFunction(this, FName("SetDisplayColor"), FVector(0, 0, 0));
+	GetWorld()->GetTimerManager().SetTimer(t, td, 1.0f,false);*/
+	td.BindUFunction(this, FName("SetDisplayColor"), FVector(1.f, 0.f, 0.f));
 	GetWorld()->GetTimerManager().SetTimer(t, td, 2.0f, false);
 }
 

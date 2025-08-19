@@ -19,4 +19,6 @@ public:
 	//Ç³¼±ÀÇ ¼Óµµ
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ColorBalloon")
 	float BallonSpeed;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ColorBalloon")
+	float LineRandomInterval;
 };

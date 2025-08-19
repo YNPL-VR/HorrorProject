@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "Containers/Queue.h"
 #include "Datatable/NumBalloon.h"
+#include "Datatable/ColorBalloon.h"
+#include "Datatable/SelectedColor.h"
 #include "MinigameManager.generated.h"
 
 
@@ -96,4 +98,21 @@ private:
 	//번호는 번호, 색깔은 색깔 enum , 나머지는 검사없이 건너뛰기
 	//EMinigame::NumBalloon 일경우 숫자 ++, 
 	int32 CorrectBalloonNumber;
+	/////////////////////////////////////////////////////////////////////////////ColorBalloon
+	//풍선 색 보여줄 TV
+	UPROPERTY()
+	class AColorDisplayActor* TVActor = nullptr;
+	//ColorBalloon 데이터
+	TArray<FColorBalloon*> ColorBalloonData;
+	UPROPERTY()
+	UDataTable* ColorBalloonDataTable;
+	//Color 데이터
+	TArray<FSelectedColor*> SelectedColorData;
+	UPROPERTY()
+	UDataTable* SelectedColorDataTable;
+
+
+	///////////////////////////////////////////////////////////////////////////미니게임 공통으로 사용할 변수
+	//맟출 풍선 순서
+	TArray<int32> MatchingBalloonOrder;
 };

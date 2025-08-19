@@ -8,7 +8,6 @@
 #include "Player/HPPawn.h"
 #include "Kismet/GameplayStatics.h"
 #include "Game/HPGameStateBase.h"
-#include "Interface/HPMinigameDataInterface.h"
 
 // Sets default values
 AAWaypointManager::AAWaypointManager()

@@ -45,9 +45,10 @@ public:
 	int32 GetCurrentDay() override;
 	
 	float GetLevelUpSecondTimer(int32 InMinigameLevel) override;
+	/* Player에서 Battery테이블 가져오는 것으로 수정 - Player만 Battery정보를 쓰므로
 	float GetConsumeAlarmBattery(int32 InMinigameLevel) override;
 	float GetChargeBattery(int32 InMinigameLevel) override;
-
+	*/
 	//다음 레벨업 시간 알려줄 함수
 	UFUNCTION()
 	void TimeToNextLevel();

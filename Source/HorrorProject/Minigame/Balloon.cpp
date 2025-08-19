@@ -35,7 +35,7 @@ ABalloon::ABalloon()
 	NumberWidgetComponent->SetVisibility(false);
 	NumberWidgetComponent->SetupAttachment(RootComponent);
 	NumberWidgetComponent->SetWidgetSpace(EWidgetSpace::World);
-	NumberWidgetComponent->SetRelativeLocation(FVector(50.0f,0.f,0.f));
+	NumberWidgetComponent->SetRelativeLocation(FVector(25.0f,0.f,0.f));
 	static ConstructorHelpers::FClassFinder<UBalloonWidget> BalloonWidgetFinder(TEXT("/Game/LSJ/UI/WBP_BalloonNumber.WBP_BalloonNumber_C"));
 	if (BalloonWidgetFinder.Succeeded())
 	{

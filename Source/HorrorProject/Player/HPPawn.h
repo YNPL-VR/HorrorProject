@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "InputActionValue.h"
+#include "DataTable/DayBattery.h"
 #include "HPPawn.generated.h"
 
 //알람 버튼이 눌렸다는 것을 알리는 델리게이트
@@ -44,6 +45,7 @@ public:
 	void ConsumeBattery();
 	//배터리 충전 함수
 	void ChargeBattery(int32 MinigameLevel);
+	
 	FORCEINLINE float GetBattery() const { return CurrentBattery; }
 	FORCEINLINE void SetBattery(const float InBattery) {  CurrentBattery = InBattery; }
 	void Move(const FInputActionValue& Value);
@@ -54,15 +56,20 @@ public:
 	FUIChargeBatteryDelegate UIChargeBatteryDelegate;
 	FFailedConsumeBatteryDelegate FailedConsumeBatteryDelegate;
 protected:
-
+	UFUNCTION()
+	void SetDefaultBattery();
 private:
 	// Todo : 자유 시점을 위해 시도 했지만 실패
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	/*UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* MoveAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	class UInputAction* LookAction;
+	class UInputAction* LookAction;*/
 
 	float CurrentBattery;
+
+	TArray<FDayBattery*> BatteryAmountData;
+	UPROPERTY()
+	UDataTable* BatteryAmountDataTable;
 
 	// HUD - 배터리량 표시
 	/*UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Widget")

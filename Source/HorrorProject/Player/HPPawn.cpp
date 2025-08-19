@@ -17,12 +17,26 @@ AHPPawn::AHPPawn()
 {
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	
+	//배터리 테이블 가져오기
+	static ConstructorHelpers::FObjectFinder<UDataTable> BatteryAmountTableFinder(TEXT("/Script/Engine.DataTable'/Game/Datatable/BatteryAmount.BatteryAmount'"));
+	if (BatteryAmountTableFinder.Succeeded())
+	{
+		BatteryAmountDataTable = BatteryAmountTableFinder.Object;
+	}
+	
+	
+	
+	
 	static ConstructorHelpers::FObjectFinder<UInputMappingContext> IMC_Default_Finder(TEXT("/Game/Input/IMC_HP.IMC_HP"));
 	if (IMC_Default_Finder.Succeeded())
 	{
 		DefaultMappingContext = IMC_Default_Finder.Object;
 	}
-	static ConstructorHelpers::FObjectFinder<UInputAction> InputMoveFinder(TEXT("/Game/Input/IA_HPMove.IA_HPMove"));
+
+
+
+	/*static ConstructorHelpers::FObjectFinder<UInputAction> InputMoveFinder(TEXT("/Game/Input/IA_HPMove.IA_HPMove"));
 	if (InputMoveFinder.Succeeded())
 	{
 		MoveAction = InputMoveFinder.Object;
@@ -31,8 +45,9 @@ AHPPawn::AHPPawn()
 	if (InputLookFinder.Succeeded())
 	{
 		LookAction = InputLookFinder.Object;
-	}
+	}*/
 
+	//위젯컴포넌트를 블루프린트로 만들었음
 	/*HUDWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HUDWidgetComponent"));
 	HUDWidgetComponent->SetCollisionProfileName(FName("NoCollision"));
 	
@@ -57,7 +72,9 @@ void AHPPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
-	CurrentBattery = 100.f;
+	
+
+	
 	
 	// Add Input Mapping Context
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
@@ -85,6 +102,17 @@ void AHPPawn::BeginPlay()
 
 			break;
 		}
+	}
+	//배터리 테이블에서 정보 가져오기
+	if (IHPMinigameDataInterface* gs = Cast<IHPMinigameDataInterface>(GetWorld()->GetGameState()))
+	{
+		const FString ContextString(TEXT("AHPPawn::BeginPlay"));
+		BatteryAmountDataTable->GetAllRows(ContextString, BatteryAmountData);
+		//Day1의 배터리 정보 넣기
+		CurrentBattery = BatteryAmountData[gs->GetCurrentDay() - 1]->DefaultBattery;
+
+		//다음날 변경시 배터리량 디폴트
+		gs->BeginNextDayMultiDelegate.AddDynamic(this, &AHPPawn::SetDefaultBattery);
 	}
 }
 
@@ -126,7 +154,7 @@ void AHPPawn::ConsumeBattery()
 	IHPMinigameDataInterface* gs = GetWorld()->GetGameState< IHPMinigameDataInterface>();
 	if (gs)
 	{
-		float ConsumeBattery = gs->GetConsumeAlarmBattery(gs->GetMinigameLevel());
+		float ConsumeBattery = BatteryAmountData[gs->GetCurrentDay() - 1 > LASTDAY ? LASTDAY : gs->GetCurrentDay() - 1]->AlarmBattery;
 
 		if (CurrentBattery >= ConsumeBattery)
 		{
@@ -163,7 +191,8 @@ void AHPPawn::ChargeBattery(int32 MinigameLevel)
 		//CurrentBattery 를 현재 레벨 난이도에 해당하는 충전배터리량 만큼 증가
 		//CurrentBattery 100 이상으로 높아지지 않게 처리
 		//MinigameLevel 값이 유효한지 검사
-		CurrentBattery = FMath::Min<float>(100.f, CurrentBattery + gs->GetChargeBattery(gs->GetMinigameLevel() < MinigameLevel ? gs->GetMinigameLevel() : MinigameLevel));
+		
+		CurrentBattery = FMath::Min<float>(100.f, CurrentBattery + BatteryAmountData[gs->GetCurrentDay() - 1 > LASTDAY ? LASTDAY : gs->GetCurrentDay() - 1]->ChargeBattery);
 
 		if (UIChargeBatteryDelegate.IsBound())
 		{
@@ -199,6 +228,19 @@ void AHPPawn::Look(const FInputActionValue& Value)
 		//Todo: 자유모드를 위해서 vr모드일때 디버그 모드일때 bUseControllerRotationYaw가 true
 		AddControllerYawInput(LookAxisVector.X * 1.5f);
 		AddControllerPitchInput(LookAxisVector.Y * 1.5f);
+	}
+}
+
+void AHPPawn::SetDefaultBattery()
+{
+	if (IHPMinigameDataInterface* gs = Cast<IHPMinigameDataInterface>(GetWorld()->GetGameState()))
+	{
+		if (!BatteryAmountData.IsValidIndex(gs->GetCurrentDay() - 1))
+		{
+			UE_LOG(LogTemp, Error, TEXT("BatteryAmountData Invailid Index"));
+			return;
+		}
+		CurrentBattery = BatteryAmountData[gs->GetCurrentDay() - 1]->DefaultBattery;
 	}
 }
 

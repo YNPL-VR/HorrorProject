@@ -6,7 +6,6 @@
 #include "GameFramework/Actor.h"
 #include "Containers/Queue.h"
 #include "Datatable/NumBalloon.h"
-#include "Containers/Queue.h"
 #include "MinigameManager.generated.h"
 
 
@@ -37,7 +36,6 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 public:
-	void SetMinigame(EMinigame minigame) { CurrentMinigame = minigame; }
 	UFUNCTION()
 	void OnSpawnWeaponTimer();
 	UFUNCTION()
@@ -52,6 +50,11 @@ public:
 	void DeactivateAllBalloon();
 	UFUNCTION()
 	void CheckCorrectBalloon(class ABalloon* Balloon);
+
+	
+protected:
+	UFUNCTION()
+	void SetMinigame();
 private:
 	//현재 미니게임 종류
 	EMinigame CurrentMinigame = EMinigame::NumBalloon;

@@ -5,6 +5,7 @@
 
 AHPGameStateBase::AHPGameStateBase()
 {
+	//"/Script/Engine.DataTable'/Game/Datatable/BatteryAmount.BatteryAmount'"
 	//DataTable 초기화
 	static ConstructorHelpers::FObjectFinder<UDataTable> MinigameLevelDesignDataTableFinder(TEXT("/Game/Datatable/MinigameLevelDesign.MinigameLevelDesign"));
 	if (MinigameLevelDesignDataTableFinder.Succeeded())
@@ -86,7 +87,7 @@ float AHPGameStateBase::GetLevelUpSecondTimer(int32 InMinigameLevel)
 {
 	return MinigameLevelDesignData[InMinigameLevel]->LevelUpSecondTimer;
 }
-
+/* Player에서 Battery테이블 가져오는 것으로 수정 - Player만 Battery정보를 쓰므로
 float AHPGameStateBase::GetConsumeAlarmBattery(int32 InMinigameLevel)
 {
 	return MinigameLevelDesignData[InMinigameLevel]->AlarmBattery;
@@ -96,7 +97,7 @@ float AHPGameStateBase::GetChargeBattery(int32 InMinigameLevel)
 {
 	return MinigameLevelDesignData[InMinigameLevel]->ChargeBattery;
 }
-
+*/
 // 다음 레벨 난이도로 설정
 void AHPGameStateBase::TimeToNextLevel()
 {

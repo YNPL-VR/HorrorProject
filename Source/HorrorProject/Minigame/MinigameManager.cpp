@@ -7,9 +7,9 @@
 #include "EngineUtils.h"
 #include "BalloonSpawnPoint.h"
 #include "Balloon.h"
-#include <Game/HPGameStateBase.h>
-#include <Player/HPPawn.h>
-#include <Kismet/GameplayStatics.h>
+#include "Game/HPGameStateBase.h"
+#include "Player/HPPawn.h"
+#include "Kismet/GameplayStatics.h"
 
 #define MAXBALLOON 20
 
@@ -69,6 +69,7 @@ void AMinigameManager::BeginPlay()
 			}
 		}
 	}
+	//풍선 오브젝트 풀 채우기
 	for (int32 BalloonSpawnCount = 0; BalloonSpawnCount < MAXBALLOON; ++BalloonSpawnCount)
 	{
 		ABalloon* Balloon = GetWorld()->SpawnActor<ABalloon>(ABalloon::StaticClass());
@@ -78,7 +79,11 @@ void AMinigameManager::BeginPlay()
 		BalloonQueue.Enqueue(Balloon);
 	}
 	
-	
+	if (IHPMinigameDataInterface* gs = Cast<IHPMinigameDataInterface>(GetWorld()->GetGameState()))
+	{
+		//다음날 변경시 미니게임 바꾸기
+		gs->BeginNextDayMultiDelegate.AddDynamic(this, &AMinigameManager::SetMinigame);
+	}
 }
 
 void AMinigameManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -194,6 +199,7 @@ void AMinigameManager::StartMinigame()
 	while (BalloonNum > 0)
 	{
 		//랜덤 스폰위치 결정
+		//n번째 마다 BalloonSpawnPoints의 정보 갱신
 		if (Count % BalloonSpawnPoints.Num() == 0)
 		{
 			int ShowNumber = Count;
@@ -229,10 +235,10 @@ void AMinigameManager::StartMinigame()
 			
 			//사용중인 목록에 추가
 			UsingBalloons.Add(Balloon);
-			//시간예측
-			int Z = Balloon->GetActorMesh()->GetBounds().GetBox().GetSize().Z;
+			//풍선의 높이 길이
+			int ZSize = Balloon->GetActorMesh()->GetBounds().GetBox().GetSize().Z;
 			//속도로 풍선 길이만큼 지나는 예측 시간 
-			float WaitTime = (Z/2) / BalloonSpeed;
+			float WaitTime = (ZSize/2) / BalloonSpeed;
 			float RandomInterVal = FMath::RandRange(0.0f, LineRandomInterval);
 			//누적해야한다. 이전 스폰 시간을 가져와서 현재 스폰시간에 더해준다.
 			float CurrentBalloonSpawnTime = BalloonSpawner->PreviousSpawnTime+ WaitTime + RandomInterVal;
@@ -333,5 +339,17 @@ void AMinigameManager::CheckCorrectBalloon(class ABalloon* Balloon)
 		StartMinigame();
 		break;
 	}
+}
+
+void AMinigameManager::SetMinigame()
+{
+	//진행중인 게임 중단
+	StopMinigame();
+	if (IHPMinigameDataInterface* gs = Cast<IHPMinigameDataInterface>(GetWorld()->GetGameState()))
+	{
+		//미니게임 바꾸기
+		CurrentMinigame = (EMinigame)gs->GetCurrentDay();
+	}
+	
 }
 

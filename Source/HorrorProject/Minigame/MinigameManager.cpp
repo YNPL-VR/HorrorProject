@@ -196,7 +196,7 @@ void AMinigameManager::StartMinigame()
 	if (gs)
 	{
 		CurrentMinigameLevel = gs->GetMinigameLevel();
-		CurrentMinigame = (EMinigame)(gs->GetCurrentDay());
+		CurrentMinigame = static_cast<EMinigame>(gs->GetCurrentDay());
 	}
 
 	switch (CurrentMinigame)
@@ -259,6 +259,7 @@ void AMinigameManager::StartMinigame()
 
 						//사용중인 목록에 추가
 						UsingBalloons.Add(Balloon);
+						Balloon->SetNumberInWidget(BalloonSpawner->ScreenBalloonNumber);
 						//풍선의 높이 길이
 						int ZSize = Balloon->GetActorMesh()->GetBounds().GetBox().GetSize().Z;
 						//속도로 풍선 길이만큼 지나는 예측 시간 
@@ -305,6 +306,7 @@ void AMinigameManager::StartMinigame()
 			}
 			//풍선을 맞췄을때 시작 색깔 인덱스
 			CorrectBalloonNumber = 0;
+			MatchingBalloonOrder.Empty();
 			//레벨에 맞춰서 데이터 테이블에서 정보 가져오기
 			BalloonNum = ColorBalloonData[CurrentMinigameLevel]->ColorNum;
 			BalloonSpeed = ColorBalloonData[CurrentMinigameLevel]->BallonSpeed;
@@ -324,7 +326,8 @@ void AMinigameManager::StartMinigame()
 				//색 랜덤 선택
 				int32 RandomColorIdx= FMath::RandRange(0, SelectedColorData.Num() - 1);
 				MatchingBalloonOrder.Emplace(RandomColorIdx);
-				FLinearColor SelectedColor = FLinearColor(SelectedColorData[RandomColorIdx]->R, SelectedColorData[RandomColorIdx]->G, SelectedColorData[RandomColorIdx]->B,1.0f);
+				FSelectedColor* BalloonColor = SelectedColorData[RandomColorIdx];
+				FLinearColor SelectedColor = FLinearColor(BalloonColor->R, BalloonColor->G, BalloonColor->B,1.0f);
 				//색 추가
 				TVActor->AddShowColor(0.1f, SelectedColor);
 				//ShowColorInterval 초간 깜박임 효과 //보여줄색 -> 투명으로 보여줄 색 확실하게 구분, 같은색이 나올 수 있다.
@@ -356,8 +359,10 @@ void AMinigameManager::StartMinigame()
 						if (ColorIdx >= BalloonNum)
 							BalloonSpawnPoint->ScreenBalloonNumber = -1;
 						else
+						{
 							BalloonSpawnPoint->ScreenBalloonNumber = MatchingBalloonOrder[ColorIdx];
-						++ColorIdx;
+							++ColorIdx;
+						}
 					}
 
 					for (int32 BalloonPointCount = BalloonSpawnPoints.Num() - 1; BalloonPointCount > 0; --BalloonPointCount)
@@ -381,6 +386,7 @@ void AMinigameManager::StartMinigame()
 					//풍선 메시 변경
 					FSelectedColor* BalloonColor = SelectedColorData[BalloonSpawnPoint->ScreenBalloonNumber];
 					Balloon->SetColor(FLinearColor(BalloonColor->R, BalloonColor->G, BalloonColor->B, 1.0f));
+					Balloon->SetNumberInWidget(BalloonSpawnPoint->ScreenBalloonNumber);
 
 					//사용중인 목록에 추가
 					UsingBalloons.Add(Balloon);
@@ -402,7 +408,6 @@ void AMinigameManager::StartMinigame()
 					++Count;
 				}
 			}
-			break;
 		}
 	}
 
@@ -427,7 +432,7 @@ void AMinigameManager::SpawnBalloon(FVector Location, FRotator Rotation, float S
 	}
 	Balloon->RemoveFromRoot();
 	Balloon->ActivateToUse(Location, Rotation, Speed*10.0f);
-	Balloon->SetNumberInWidget(Number);
+	//Balloon->SetNumberInWidget(Number);
 }
 //사용중인 풍선 전부 비활성화
 void AMinigameManager::DeactivateAllBalloon()
@@ -490,7 +495,7 @@ void AMinigameManager::CheckCorrectBalloon(class ABalloon* Balloon)
 		break;
 	case EMinigame::ColorBalloon:
 		//마지막 숫자라면 배터리 충전 
-		if (MatchingBalloonOrder[CorrectBalloonNumber] == Balloon->GetNumberInWidget())
+		if (MatchingBalloonOrder.Last(0) == Balloon->GetNumberInWidget())
 		{
 			//플레이어 찾기 //배터리 충전
 			APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);

@@ -21,6 +21,7 @@ void UHPHUDWidget::NativeConstruct()
 	{
 		Player->UIConsumeBatteryDelegate.BindUFunction(this, FName("SetBatteryPercent"));
 		Player->UIChargeBatteryDelegate.BindUFunction(this, FName("SetBatteryPercent"));
+		SetBatteryPercent(Player->GetBattery());
 	}
 
 	TimeStrArray.Add("22:00");

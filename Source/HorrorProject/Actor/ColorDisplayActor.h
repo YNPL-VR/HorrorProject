@@ -25,12 +25,21 @@ public:
 
 public:
 	UFUNCTION()
-	void SetDisplayColor(FVector Color);
+	void SetDisplayColor(int32 Index);
 
+	void ClearShowColorList();
+	void AddShowColor(float InRate, FLinearColor DisplayColor);
+	void StartShowColor();
+	FLinearColor GetBalloonColor(int32 Index);
+	FORCEINLINE int32 GetBalloonColorLastIdx() { return TimeColor.Num()-1; }
 private:
 	UPROPERTY(EditAnywhere, Category = "Mesh", meta = (AllowPrivateAccess = "true"))
 	class UStaticMeshComponent* DisplayMeshComponent;
 	//색 변경을 위한 매터리얼
 	UPROPERTY(EditAnywhere, Category = "Mesh", meta = (AllowPrivateAccess = "true"))
 	class UMaterialInstanceDynamic* DynamicMaterialInstance;
+	//색을 보여주기 위한 타이머
+	FTimerHandle ShowColorTimer;
+	//한 게임에 보여줄 색상정보
+	TArray<TPair<float, FLinearColor>> TimeColor;
 };

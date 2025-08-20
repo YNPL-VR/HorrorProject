@@ -42,13 +42,6 @@ void AColorDisplayActor::BeginPlay()
 		DynamicMaterialInstance->SetVectorParameterValue(ParameterName, FVector(1,1,1));
 		DisplayMeshComponent->SetMaterial(0, DynamicMaterialInstance);
 	}
-
-	FTimerHandle t;
-	FTimerDelegate td;
-	/*td.BindUFunction(this, FName("SetDisplayColor"), FVector(0, 0, 0));
-	GetWorld()->GetTimerManager().SetTimer(t, td, 1.0f,false);*/
-	td.BindUFunction(this, FName("SetDisplayColor"), FVector(1.f, 0.f, 0.f));
-	GetWorld()->GetTimerManager().SetTimer(t, td, 2.0f, false);
 }
 
 // Called every frame
@@ -58,9 +51,58 @@ void AColorDisplayActor::Tick(float DeltaTime)
 
 }
 
-void AColorDisplayActor::SetDisplayColor(FVector Color)
+void AColorDisplayActor::SetDisplayColor(int32 Index)
 {
+	GetWorld()->GetTimerManager().ClearTimer(ShowColorTimer);
+
 	FName ParameterName = FName("Param");
-	DynamicMaterialInstance->SetVectorParameterValue(ParameterName, Color);
+	//투명색으로 깜박임효과
+	DynamicMaterialInstance->SetVectorParameterValue(ParameterName, TimeColor[Index].Value);
+
+	
+
+	//마지막 인덱스라면 타이머 작동 중지
+	if (TimeColor.Num() - 1 <= Index)
+	{
+		return;
+	}
+
+	GetWorld()->GetTimerManager().SetTimer(ShowColorTimer,
+		[this,Index]()
+		{
+			SetDisplayColor(Index+1);
+		}, TimeColor[Index+1].Key, false);
+}
+
+void AColorDisplayActor::ClearShowColorList()
+{
+	TimeColor.Empty();
+}
+
+void AColorDisplayActor::AddShowColor(float InRate, FLinearColor DisplayColor)
+{
+	TimeColor.Add({ InRate,DisplayColor });
+}
+
+void AColorDisplayActor::StartShowColor()
+{
+	if (TimeColor.Num() < 1)
+	{
+		UE_LOG(LogTemp, Error, TEXT("AColorDisplayActor::StartShowColor - NO Color Time"));
+		return;
+	}
+
+	GetWorld()->GetTimerManager().SetTimer(ShowColorTimer,
+		[this]()
+		{
+			SetDisplayColor(0);
+		},TimeColor[0].Key+1.0f,false);
+}
+
+FLinearColor AColorDisplayActor::GetBalloonColor(int32 Index)
+{
+	if (!TimeColor.IsValidIndex(Index))
+		return FLinearColor(1,1,1,1);
+	return TimeColor[Index].Value; 
 }
 

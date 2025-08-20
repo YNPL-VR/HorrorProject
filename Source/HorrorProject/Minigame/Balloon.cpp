@@ -72,7 +72,7 @@ void ABalloon::BeginPlay()
 	{
 		DynamicMaterialInstance = UMaterialInstanceDynamic::Create(BalloonMeshComponent->GetMaterial(0), this);
 		FName ParameterName = FName("Param");
-		DynamicMaterialInstance->SetVectorParameterValue(ParameterName, Color);
+		DynamicMaterialInstance->SetVectorParameterValue(ParameterName, FLinearColor(1,1,1,1));
 		BalloonMeshComponent->SetMaterial(0, DynamicMaterialInstance);
 		//충돌 이벤트 함수등록
 		SphereComponent->OnComponentHit.AddDynamic(this, &ABalloon::OnComponentHit);
@@ -102,9 +102,10 @@ void ABalloon::Tick(float DeltaTime)
 	SphereComponent->AddForce(TotalForce);
 }
 
-void ABalloon::SetColor(FVector InColor)
+void ABalloon::SetColor(FLinearColor InColor)
 {
-	Color = InColor;
+	FName ParameterName = FName("Param");
+	DynamicMaterialInstance->SetVectorParameterValue(ParameterName, InColor);
 }
 //활성화 설정
 void ABalloon::ActivateToUse(FVector Location, FRotator Rotation, float Speed)

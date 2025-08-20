@@ -48,6 +48,8 @@ protected:
 
 	UFUNCTION()
 	void ResetWaypoint();
+	//Day에 따라 시간 가져오기
+	float GetWaitTimebyDay(const int32 Index);
 public:
 	FEnemyReachEndPointMutiDelegate EnemyReachEndPointMutiDelegate;
 private:
@@ -62,8 +64,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = Path, meta = (AllowPrivateAccess = "true", DisplayName = "BP_Waypoint"))
 	TArray<TObjectPtr<class AWaypoint>> Path;
 
-	UPROPERTY(VisibleAnywhere, Category = Path)
-	TArray<float> WaypointInfo;
+	
 
 	UPROPERTY(VisibleInstanceOnly, Category = Path)
 	int32 CurrentWaypoint;
@@ -72,5 +73,5 @@ private:
 
 	UPROPERTY()
 	UDataTable* NPCWaypointDataTable;
-
+	TArray<FNPCWaypointStruct*> WaypointInfo;
 };

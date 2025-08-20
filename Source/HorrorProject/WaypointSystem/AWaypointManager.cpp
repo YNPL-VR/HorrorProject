@@ -34,15 +34,7 @@ void AAWaypointManager::BeginPlay()
 	
 	//각 Waypoint 데이터 저장
 	const FString ContextString(TEXT("AAWaypointManager::BeginPlay"));
-	TArray<FNPCWaypointStruct*> AllRows;
-	NPCWaypointDataTable->GetAllRows(ContextString, AllRows);
-	for (const FNPCWaypointStruct* RowData : AllRows)
-	{
-		if (RowData)
-		{
-			WaypointInfo.Add(RowData->WaitTime);
-		}
-	}
+	NPCWaypointDataTable->GetAllRows(ContextString, WaypointInfo);
 
 	//몬스터 생성 및 리셋하여 웨이포인트 시작
 	if (Path.Num() > 0 && 0 < TargetClassArr.Num())
@@ -156,7 +148,7 @@ void AAWaypointManager::MoveWaypointTarget(int32 InWaypoint)
 	//n 초 뒤 다음 Waypoint 로 이동 
 	else if (Path.Num() > InWaypoint + 1 && WaypointInfo.Num() > InWaypoint)
 	{
-		GetWorld()->GetTimerManager().SetTimer(PathHandle, this, &AAWaypointManager::ArrivedOnHGWaypoint, WaypointInfo[InWaypoint], false);
+		GetWorld()->GetTimerManager().SetTimer(PathHandle, this, &AAWaypointManager::ArrivedOnHGWaypoint, GetWaitTimebyDay(InWaypoint), false);
 	}
 	else if (Path.Num() > InWaypoint + 1 && WaypointInfo.Num() <= InWaypoint)
 	{
@@ -188,5 +180,27 @@ void AAWaypointManager::ResetWaypoint()
 		}
 	}
 	//처음 웨이포인트부터 출발
-	GetWorld()->GetTimerManager().SetTimer(PathHandle, this, &AAWaypointManager::ArrivedOnHGWaypoint, WaypointInfo[0], false);
+	GetWorld()->GetTimerManager().SetTimer(PathHandle, this, &AAWaypointManager::ArrivedOnHGWaypoint, GetWaitTimebyDay(0), false);
+}
+
+float AAWaypointManager::GetWaitTimebyDay(int32 Index)
+{
+	if (!WaypointInfo.IsValidIndex(Index))
+		return 0.0f;
+	if (IHPMinigameDataInterface* gs = Cast<IHPMinigameDataInterface>(GetWorld()->GetGameState()))
+	{
+		switch (gs->GetCurrentDay())
+		{
+		case 1:
+			return WaypointInfo[Index]->Day1WaitTime;
+		case 2:
+			return WaypointInfo[Index]->Day2WaitTime;
+		case 3:
+			return WaypointInfo[Index]->Day3WaitTime;
+		case 4:
+			return WaypointInfo[Index]->Day4WaitTime;
+		}
+		
+	}
+	return 0.0f;
 }

@@ -26,7 +26,7 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	void SetColor(FVector InColor);
+	void SetColor(FLinearColor InColor);
 
 	void ActivateToUse(FVector Location, FRotator Rotation, float Speed);
 	void DeactivateToSave();
@@ -52,8 +52,6 @@ private:
 	class UStaticMeshComponent* BalloonMeshComponent;
 	UPROPERTY(EditAnywhere, Category = "Mesh", meta = (AllowPrivateAccess = "true"))
 	class UMaterialInstanceDynamic* DynamicMaterialInstance;
-	// Todo : 색 변수 선언하고 , Spawn을 늦게 해서 색 값 넣기
-	FVector Color;
 	int32 ScreenBalloonNumber;
 	//속도값
 	float ThrustForce = 0.0f;

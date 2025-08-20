@@ -115,4 +115,6 @@ private:
 	///////////////////////////////////////////////////////////////////////////미니게임 공통으로 사용할 변수
 	//맟출 풍선 순서
 	TArray<int32> MatchingBalloonOrder;
+
+	void RandomBalloonSpawnPoint(int32& ShowNumber);
 };

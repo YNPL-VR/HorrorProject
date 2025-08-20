@@ -11,5 +11,11 @@ struct FNPCWaypointStruct : public FTableRowBase
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Waypoint")
-	float WaitTime;
+	float Day1WaitTime;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Waypoint")
+	float Day2WaitTime;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Waypoint")
+	float Day3WaitTime;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Waypoint")
+	float Day4WaitTime;
 };

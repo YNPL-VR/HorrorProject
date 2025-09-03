@@ -9,6 +9,13 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FCatchWeaponDynamicMultiDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPutWeaponDynamicMultiDelegate);
 
+UENUM(BlueprintType)
+enum class EWeaponType : uint8
+{
+	Gun,
+	Dart
+};
+
 UCLASS()
 class HORRORPROJECT_API AWeapon : public AActor
 {
@@ -35,5 +42,8 @@ public:
 	FCatchWeaponDynamicMultiDelegate CatchWeaponDynamicMultiDelegate;
 	UPROPERTY(BlueprintAssignable, BlueprintCallable, Category = "Weapon")
 	FPutWeaponDynamicMultiDelegate PutWeaponDynamicMultiDelegate;
-	
+	UPROPERTY(BlueprintReadWrite, Category = "Weapon")
+	FTimerHandle SpawnWeaponHandle;
+	UPROPERTY(BlueprintReadWrite,Category = "Weapon")
+	EWeaponType WeaponType;
 };

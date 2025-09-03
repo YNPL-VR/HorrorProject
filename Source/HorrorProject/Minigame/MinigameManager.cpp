@@ -29,6 +29,15 @@ AMinigameManager::AMinigameManager()
 	{
 		UE_LOG(LogTemp, Error, TEXT("GunClass를 찾을 수 없습니다."));
 	}
+	static ConstructorHelpers::FClassFinder<AWeapon> DartClassFinder(TEXT("/Game/LSJ/Blueprint/BP_Dart.BP_Dart_C"));
+	if (DartClassFinder.Succeeded())
+	{
+		DartClass = DartClassFinder.Class;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("GunClass를 찾을 수 없습니다."));
+	}
 
 	//NumberBalloon DataTable 초기화
 	static ConstructorHelpers::FObjectFinder<UDataTable> MinigameBalloonDataTableFinder(TEXT("/Game/Datatable/NumBalloon.NumBalloon"));
@@ -48,6 +57,12 @@ AMinigameManager::AMinigameManager()
 	{
 		SelectedColorDataTable = ColorDataTableFinder.Object;
 	}
+	//DartBalloon DataTable 초기화
+	static ConstructorHelpers::FObjectFinder<UDataTable> DartBalloonDataTableFinder(TEXT("/Script/Engine.DataTable'/Game/Datatable/DartBalloon.DartBalloon'"));
+	if (DartBalloonDataTableFinder.Succeeded())
+	{
+		DartBalloonDataTable = DartBalloonDataTableFinder.Object;
+	}
 }
 
 // Called when the game starts or when spawned
@@ -60,13 +75,15 @@ void AMinigameManager::BeginPlay()
 	MinigameBalloonDataTable->GetAllRows(ContextString, MinigameBalloonData);
 	ColorBalloonDataTable->GetAllRows(ContextString, ColorBalloonData);
 	SelectedColorDataTable->GetAllRows(ContextString, SelectedColorData);
-
+	DartBalloonDataTable->GetAllRows(ContextString, DartBalloonData);
+	
 	CurrentWeapon = GetWorld()->SpawnActor<AWeapon>(GunClass, GetActorLocation(), GetActorRotation());
 	if(nullptr!=CurrentWeapon)
 	{
 		CurrentWeapon->CatchWeaponDynamicMultiDelegate.AddDynamic(this, &AMinigameManager::OffSpawnWeaponTimer);
 		CurrentWeapon->PutWeaponDynamicMultiDelegate.AddDynamic(this, &AMinigameManager::OnSpawnWeaponTimer);
 		AllWeapons.Add(CurrentWeapon);
+		AllWeapons.Add(GetWorld()->SpawnActor<AWeapon>(DartClass, GetActorLocation(), GetActorRotation()));
 	}
 
 	UWorld* World = GetWorld();
@@ -138,25 +155,62 @@ void AMinigameManager::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 }
-
+//무기를 드랍했을때 실행되는 함수
 void AMinigameManager::OnSpawnWeaponTimer()
 {
-	//미니게임 강제종료
-	StopMinigame();
+	//무기가 존재하지 않으면 리턴
+	if (AllWeapons.Num() < 1)
+		return;
+	if (CurrentMinigame==EMinigame::NumBalloon && CurrentWeapon->WeaponType == EWeaponType::Gun)
+	{
+		//미니게임 강제종료
+		StopMinigame();
+		//무기 스폰
+		GetWorld()->GetTimerManager().SetTimer(SpawnWeaponHandle, this, &AMinigameManager::ResetWeapon, SpawnTime, false);
+	}
+	else if (CurrentMinigame == EMinigame::DartBalloon && CurrentWeapon->WeaponType == EWeaponType::Dart)
+	{
+		//일정시간동안 들지 않았을때 미니 게임 종료
+		GetWorld()->GetTimerManager().SetTimer(SpawnWeaponHandle, this, &AMinigameManager::StopMinigame, 10.0f, false);
+		//무기스폰위치에 새로운 다트 생성
+		CurrentWeapon = GetWorld()->SpawnActor<AWeapon>(DartClass, GetActorLocation(), GetActorRotation());
+		CurrentWeapon->CatchWeaponDynamicMultiDelegate.AddDynamic(this, &AMinigameManager::OffSpawnWeaponTimer);
+		CurrentWeapon->PutWeaponDynamicMultiDelegate.AddDynamic(this, &AMinigameManager::OnSpawnWeaponTimer);
 
-	GetWorld()->GetTimerManager().SetTimer(SpawnWeaponHandle,this, &AMinigameManager::ResetWeapon, SpawnTime,false);
+	}
+	
 }
-
+//Todo : 플레이어에서 해야하지 않을까?
+//무기를 들었을때 실행되는 함수
 void AMinigameManager::OffSpawnWeaponTimer()
 {
-	GetWorld()->GetTimerManager().ClearTimer(SpawnWeaponHandle);
-	//미니게임 시작
-	StartMinigame();
+	//무기가 존재하지 않으면 리턴
+	if (AllWeapons.Num() < 1)
+		return;
+	//총이라면 들었을때 게임시작
+	if (CurrentWeapon->WeaponType == EWeaponType::Gun)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(SpawnWeaponHandle);
+		//미니게임 시작
+		StartMinigame();
+	}
+	//다트를 들었을때 게임중이 아니라면 게임 시작
+	else if (CurrentWeapon->WeaponType == EWeaponType::Dart)
+	{
+		//Destroy 해제 -> 문제발생 댕글리포인터가 됨 ->드랍했을때 Destroy타이머를 작동하면 해결됨
+		GetWorld()->GetTimerManager().ClearTimer(CurrentWeapon->SpawnWeaponHandle);
+		//미니 게임 종료 타이머 해제
+		GetWorld()->GetTimerManager().ClearTimer(SpawnWeaponHandle);
+		if(UsingBalloons.Num()==0)
+			StartMinigame();
+	}
 }
 //Todo : 무기마다 리셋 설정 다를 예정
 void AMinigameManager::ResetWeapon()
 {
-	if (nullptr != CurrentWeapon)
+	if (nullptr == CurrentWeapon)
+		return;
+	if (CurrentWeapon->WeaponType == EWeaponType::Gun)
 	{
 		USkeletalMeshComponent* FoundMesh = CurrentWeapon->FindComponentByClass<USkeletalMeshComponent>();
 		if (FoundMesh)
@@ -167,18 +221,24 @@ void AMinigameManager::ResetWeapon()
 			FoundMesh->SetSimulatePhysics(true);
 		}
 	}
-
+	else if (CurrentWeapon->WeaponType == EWeaponType::Dart)
+	{
+		CurrentWeapon->SetActorLocationAndRotation(GetActorLocation(), GetActorRotation());
+	}
+	//현재 다트를 10초뒤에 제거하고
+	//다트를 무기 스폰 위치에 새로 스폰하여 CurrentWeapon 초기화
 	
 }
 
 void AMinigameManager::StartMinigame()
 {
-	//데이터 테이블이 비었다면
+	//데이터 테이블이 비었다면 오류발생 로그
 	if (MinigameBalloonData.Num() < 1)
 	{
 		UE_LOG(LogTemp, Error, TEXT("MinigameBalloonData Empty"));
 		return;
 	}
+	//풍선 스폰 포인트가 없다면 오류발생 로그
 	if (BalloonSpawnPoints.Num() < 1)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BalloonSpawnPoints Empty"));
@@ -196,7 +256,8 @@ void AMinigameManager::StartMinigame()
 	if (gs)
 	{
 		CurrentMinigameLevel = gs->GetMinigameLevel();
-		CurrentMinigame = static_cast<EMinigame>(gs->GetCurrentDay());
+		//CurrentMinigame = EMinigame::DartBalloon; //= static_cast<EMinigame>(gs->GetCurrentDay());
+	
 	}
 
 	switch (CurrentMinigame)
@@ -287,106 +348,171 @@ void AMinigameManager::StartMinigame()
 			break;
 		}
 	case EMinigame::ColorBalloon:
+	{
+		if (TVActor == nullptr)
 		{
-			if (TVActor == nullptr)
-			{
-				UE_LOG(LogTemp, Error, TEXT("TVActor == nullptr"));
-				return;
-			}
-			if (SelectedColorData.Num() < 1 || ColorBalloonData.Num() < 1)
-			{
-				UE_LOG(LogTemp, Error, TEXT("SelectedColorData.Num() < 1 || ColorBalloonData.Num() < 1"));
-				return;
-			}
-			//난이도가 데이터베이스의 항목보다 많다면 //예외처리
-			if (ColorBalloonData.Num() - 1 < CurrentMinigameLevel)
-			{
-				UE_LOG(LogTemp, Error, TEXT("ColorBalloonData.Num() - 1 < currentMinigameLevel"));
-				CurrentMinigameLevel = ColorBalloonData.Num() - 1;
-			}
-			//풍선을 맞췄을때 시작 색깔 인덱스
-			CorrectBalloonNumber = 0;
-			MatchingBalloonOrder.Empty();
-			//레벨에 맞춰서 데이터 테이블에서 정보 가져오기
-			BalloonNum = ColorBalloonData[CurrentMinigameLevel]->ColorNum;
-			BalloonSpeed = ColorBalloonData[CurrentMinigameLevel]->BallonSpeed;
-			LineRandomInterval = ColorBalloonData[CurrentMinigameLevel]->LineRandomInterval;
-			float ShowColorInterval = ColorBalloonData[CurrentMinigameLevel]->ColorChangeSpeed;
+			UE_LOG(LogTemp, Error, TEXT("TVActor == nullptr"));
+			return;
+		}
+		if (SelectedColorData.Num() < 1 || ColorBalloonData.Num() < 1)
+		{
+			UE_LOG(LogTemp, Error, TEXT("SelectedColorData.Num() < 1 || ColorBalloonData.Num() < 1"));
+			return;
+		}
+		//난이도가 데이터베이스의 항목보다 많다면 //예외처리
+		if (ColorBalloonData.Num() - 1 < CurrentMinigameLevel)
+		{
+			UE_LOG(LogTemp, Error, TEXT("ColorBalloonData.Num() - 1 < currentMinigameLevel"));
+			CurrentMinigameLevel = ColorBalloonData.Num() - 1;
+		}
+		//풍선을 맞췄을때 시작 색깔 인덱스
+		CorrectBalloonNumber = 0;
+		MatchingBalloonOrder.Empty();
+		//레벨에 맞춰서 데이터 테이블에서 정보 가져오기
+		BalloonNum = ColorBalloonData[CurrentMinigameLevel]->ColorNum;
+		BalloonSpeed = ColorBalloonData[CurrentMinigameLevel]->BallonSpeed;
+		LineRandomInterval = ColorBalloonData[CurrentMinigameLevel]->LineRandomInterval;
+		float ShowColorInterval = ColorBalloonData[CurrentMinigameLevel]->ColorChangeSpeed;
 
-			//ColorNum 만큼 TV에 색 보여주기 -> 다 보여준 후 풍선 스폰
-			//ColorNum 만큼 랜덤으로 색을 선택 후 TVActor TArray에 추가
-			//같은 색이 나와도 된다.
-			//시간 누적
-			//처음 시작 시간 TVActor->StartShowColor에서 추가해주었음
-			float LastRate = 1.0f;
-			//색상 정보 초기화
-			TVActor->ClearShowColorList();
-			for (int32 Count = 0; Count < BalloonNum; ++Count)
-			{
-				//색 랜덤 선택
-				int32 RandomColorIdx= FMath::RandRange(0, SelectedColorData.Num() - 1);
-				MatchingBalloonOrder.Emplace(RandomColorIdx);
-				FSelectedColor* BalloonColor = SelectedColorData[RandomColorIdx];
-				FLinearColor SelectedColor = FLinearColor(BalloonColor->R, BalloonColor->G, BalloonColor->B,1.0f);
-				//색 추가
-				TVActor->AddShowColor(0.1f, SelectedColor);
-				//ShowColorInterval 초간 깜박임 효과 //보여줄색 -> 투명으로 보여줄 색 확실하게 구분, 같은색이 나올 수 있다.
-				TVActor->AddShowColor(ShowColorInterval, FLinearColor(1,1,1,1));
-				LastRate += 0.1f + ShowColorInterval;
-			}
-			//순서대로 보여주기
-			TVActor->StartShowColor();
-			//TVActor가 여러번 Timer를 써야하는데 어떤 방식으로 하는 것이 좋을까?
-			//Timer를 하나로 쓰고 보여준후 다음것 보여줄 세팅 , 큐 사용, 목록을 전달해주어야함 - 필요사항: 초, 색깔,
-		
+		//ColorNum 만큼 TV에 색 보여주기 -> 다 보여준 후 풍선 스폰
+		//ColorNum 만큼 랜덤으로 색을 선택 후 TVActor TArray에 추가
+		//같은 색이 나와도 된다.
+		//시간 누적
+		//처음 시작 시간 TVActor->StartShowColor에서 추가해주었음
+		float LastRate = 1.0f;
+		//색상 정보 초기화
+		TVActor->ClearShowColorList();
+		for (int32 Count = 0; Count < BalloonNum; ++Count)
+		{
+			//색 랜덤 선택
+			int32 RandomColorIdx = FMath::RandRange(0, SelectedColorData.Num() - 1);
+			MatchingBalloonOrder.Emplace(RandomColorIdx);
+			FSelectedColor* BalloonColor = SelectedColorData[RandomColorIdx];
+			FLinearColor SelectedColor = FLinearColor(BalloonColor->R, BalloonColor->G, BalloonColor->B, 1.0f);
+			//색 추가
+			TVActor->AddShowColor(0.1f, SelectedColor);
+			//ShowColorInterval 초간 깜박임 효과 //보여줄색 -> 투명으로 보여줄 색 확실하게 구분, 같은색이 나올 수 있다.
+			TVActor->AddShowColor(ShowColorInterval, FLinearColor(1, 1, 1, 1));
+			LastRate += 0.1f + ShowColorInterval;
+		}
+		//순서대로 보여주기
+		TVActor->StartShowColor();
+		//TVActor가 여러번 Timer를 써야하는데 어떤 방식으로 하는 것이 좋을까?
+		//Timer를 하나로 쓰고 보여준후 다음것 보여줄 세팅 , 큐 사용, 목록을 전달해주어야함 - 필요사항: 초, 색깔,
 
-			//풍선 스폰 시간
+
+		//풍선 스폰 시간
+		for (auto BalloonSpawnPoint : BalloonSpawnPoints)
+		{
+			BalloonSpawnPoint->PreviousSpawnTime = LastRate;
+		}
+
+		//순서대로 풍선 스폰
+		int32 ColorIdx = 0;
+		for (int32 Count = 0; Count < BalloonNum;)
+		{
+			//랜덤으로 BalloonSpawnPoints 순서 섞기
+			if (Count % BalloonSpawnPoints.Num() == 0)
+			{
+				//색깔을 바꾸기 위해 BalloonSpawnPoint에 풍선 색 index 대입
+				for (auto BalloonSpawnPoint : BalloonSpawnPoints)
+				{
+					if (ColorIdx >= BalloonNum)
+						BalloonSpawnPoint->ScreenBalloonNumber = -1;
+					else
+					{
+						BalloonSpawnPoint->ScreenBalloonNumber = MatchingBalloonOrder[ColorIdx];
+						++ColorIdx;
+					}
+				}
+
+				for (int32 BalloonPointCount = BalloonSpawnPoints.Num() - 1; BalloonPointCount > 0; --BalloonPointCount)
+				{
+					int32 RandIdx = FMath::RandRange(0, BalloonSpawnPoints.Num() - 1);
+					BalloonSpawnPoints.Swap(BalloonPointCount, RandIdx);
+				}
+			}
+
+			//풍선 스폰
 			for (auto BalloonSpawnPoint : BalloonSpawnPoints)
 			{
-				BalloonSpawnPoint->PreviousSpawnTime = LastRate;
-			}
+				if (BalloonSpawnPoint->ScreenBalloonNumber == -1)
+				{
+					continue;
+				}
 
-			//순서대로 풍선 스폰
-			int32 ColorIdx = 0;
-			for (int32 Count = 0; Count < BalloonNum;)
+				//큐에서 풍선 꺼내기
+				ABalloon* Balloon;
+				BalloonQueue.Dequeue(Balloon);
+				//풍선 메시 변경
+				FSelectedColor* BalloonColor = SelectedColorData[BalloonSpawnPoint->ScreenBalloonNumber];
+				Balloon->SetColor(FLinearColor(BalloonColor->R, BalloonColor->G, BalloonColor->B, 1.0f));
+				Balloon->SetNumberInWidget(BalloonSpawnPoint->ScreenBalloonNumber);
+
+				//사용중인 목록에 추가
+				UsingBalloons.Add(Balloon);
+				//풍선의 높이 길이
+				int ZSize = Balloon->GetActorMesh()->GetBounds().GetBox().GetSize().Z;
+				//속도로 풍선 길이만큼 지나는 예측 시간 
+				float WaitTime = (ZSize / 2) / BalloonSpeed;
+				float RandomInterVal = FMath::RandRange(0.0f, LineRandomInterval);
+				//누적해야한다. 이전 스폰 시간을 가져와서 현재 스폰시간에 더해준다.
+				float CurrentBalloonSpawnTime = BalloonSpawnPoint->PreviousSpawnTime + WaitTime + RandomInterVal;
+				BalloonSpawnPoint->PreviousSpawnTime = CurrentBalloonSpawnTime;
+				//풍선 스폰 타이머
+				GetWorld()->GetTimerManager().SetTimer(Balloon->SpawnTimerHandle,
+					[this, BalloonSpawnPoint, Balloon, BalloonSpeed]()
+					{
+						SpawnBalloon(BalloonSpawnPoint->GetActorLocation(), BalloonSpawnPoint->GetActorRotation(), BalloonSpeed,
+							BalloonSpawnPoint->ScreenBalloonNumber, Balloon);
+					}, CurrentBalloonSpawnTime, false);
+				++Count;
+			}
+		}
+		break;
+	}
+	case EMinigame::DartBalloon:
+	{
+		//난이도가 데이터베이스의 항목보다 많다면 //예외처리
+		if (DartBalloonData.Num() - 1 < CurrentMinigameLevel)
+		{
+			UE_LOG(LogTemp, Error, TEXT("MinigameBalloonData.Num() - 1 < currentMinigameLevel"));
+			CurrentMinigameLevel = DartBalloonData.Num() - 1;
+		}
+		//풍선을 맞췄을때 시작 숫자
+		CorrectBalloonNumber = 1;
+		//레벨에 맞춰서 데이터 테이블에서 정보 가져오기
+		BalloonNum = DartBalloonData[CurrentMinigameLevel]->BalloonNum;
+		BalloonSpeed = DartBalloonData[CurrentMinigameLevel]->BalloonSpeed;
+		LineRandomInterval = DartBalloonData[CurrentMinigameLevel]->LineRandomInterval;
+		{
+			//풍선 수만큼 생성
+			int32 Count = 0;
+			while (BalloonNum > Count)
 			{
-				//랜덤으로 BalloonSpawnPoints 순서 섞기
+				//랜덤 스폰위치 결정
+				//n번째 마다 BalloonSpawnPoints의 정보 갱신
 				if (Count % BalloonSpawnPoints.Num() == 0)
 				{
-					//색깔을 바꾸기 위해 BalloonSpawnPoint에 풍선 색 index 대입
-					for (auto BalloonSpawnPoint : BalloonSpawnPoints)
-					{
-						if (ColorIdx >= BalloonNum)
-							BalloonSpawnPoint->ScreenBalloonNumber = -1;
-						else
-						{
-							BalloonSpawnPoint->ScreenBalloonNumber = MatchingBalloonOrder[ColorIdx];
-							++ColorIdx;
-						}
-					}
-
+					//랜덤으로 순서 섞기
 					for (int32 BalloonPointCount = BalloonSpawnPoints.Num() - 1; BalloonPointCount > 0; --BalloonPointCount)
 					{
 						int32 RandIdx = FMath::RandRange(0, BalloonSpawnPoints.Num() - 1);
 						BalloonSpawnPoints.Swap(BalloonPointCount, RandIdx);
 					}
 				}
-				
-				//풍선 스폰
-				for (auto BalloonSpawnPoint : BalloonSpawnPoints)
+				//속도로 풍선 길이만큼 지난 시간 예측하고 생성 - 풍선이 전부 같은 속도이므로 랜덤시간 + 속도로 풍선 길이만큼 지난 시간
+				for (const auto& BalloonSpawner : BalloonSpawnPoints)
 				{
-					if (BalloonSpawnPoint->ScreenBalloonNumber == -1)
+					// 총 스폰한 수가 최대치를 넘지 않게 만듬
+					if (BalloonNum <= Count)
 					{
-						continue;
+						return;
 					}
 
 					//큐에서 풍선 꺼내기
 					ABalloon* Balloon;
 					BalloonQueue.Dequeue(Balloon);
-					//풍선 메시 변경
-					FSelectedColor* BalloonColor = SelectedColorData[BalloonSpawnPoint->ScreenBalloonNumber];
-					Balloon->SetColor(FLinearColor(BalloonColor->R, BalloonColor->G, BalloonColor->B, 1.0f));
-					Balloon->SetNumberInWidget(BalloonSpawnPoint->ScreenBalloonNumber);
 
 					//사용중인 목록에 추가
 					UsingBalloons.Add(Balloon);
@@ -396,19 +522,23 @@ void AMinigameManager::StartMinigame()
 					float WaitTime = (ZSize / 2) / BalloonSpeed;
 					float RandomInterVal = FMath::RandRange(0.0f, LineRandomInterval);
 					//누적해야한다. 이전 스폰 시간을 가져와서 현재 스폰시간에 더해준다.
-					float CurrentBalloonSpawnTime = BalloonSpawnPoint->PreviousSpawnTime + WaitTime + RandomInterVal;
-					BalloonSpawnPoint->PreviousSpawnTime = CurrentBalloonSpawnTime;
+					float CurrentBalloonSpawnTime = BalloonSpawner->PreviousSpawnTime + WaitTime + RandomInterVal;
+					BalloonSpawner->PreviousSpawnTime = CurrentBalloonSpawnTime;
 					//풍선 스폰 타이머
 					GetWorld()->GetTimerManager().SetTimer(Balloon->SpawnTimerHandle,
-						[this, BalloonSpawnPoint, Balloon, BalloonSpeed]()
+						[this, BalloonSpawner, Balloon, BalloonSpeed]()
 						{
-							SpawnBalloon(BalloonSpawnPoint->GetActorLocation(), BalloonSpawnPoint->GetActorRotation(), BalloonSpeed,
-								BalloonSpawnPoint->ScreenBalloonNumber, Balloon);
+							SpawnBalloon(BalloonSpawner->GetActorLocation(), BalloonSpawner->GetActorRotation(), BalloonSpeed,
+								BalloonSpawner->ScreenBalloonNumber, Balloon);
 						}, CurrentBalloonSpawnTime, false);
 					++Count;
 				}
 			}
 		}
+
+		break;
+	}
+
 	}
 
 	
@@ -456,6 +586,16 @@ void AMinigameManager::DeactivateAllBalloon()
 
 void AMinigameManager::CheckCorrectBalloon(class ABalloon* Balloon)
 {
+	//DeadZone에 맞았다면 실패처리
+	if (-1 == Balloon->GetNumberInWidget())
+	{
+		//틀린 숫자 or 마지막 풍선을 맞췄다면 게임종료 
+		StopMinigame();
+		//다시 게임 시작
+		StartMinigame();
+		return;
+	}
+
 	switch (CurrentMinigame)
 	{
 	case EMinigame::NumBalloon:
@@ -487,7 +627,7 @@ void AMinigameManager::CheckCorrectBalloon(class ABalloon* Balloon)
 			BalloonQueue.Enqueue(Balloon);
 			return;
 		}
-		
+
 		//틀린 숫자 or 마지막 풍선을 맞췄다면 게임종료 
 		StopMinigame();
 		//다시 게임 시작
@@ -528,8 +668,42 @@ void AMinigameManager::CheckCorrectBalloon(class ABalloon* Balloon)
 		//다시 게임 시작
 		StartMinigame();
 		break;
-	}
+	case EMinigame::DartBalloon:
+		//마지막 숫자라면 배터리 충전
+		if (CorrectBalloonNumber == DartBalloonData[CurrentMinigameLevel]->BalloonNum)
+		{
+			//플레이어 찾기
+			APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
+			if (AHPPawn* Player = Cast<AHPPawn>(PlayerPawn))
+			{
+				Player->ChargeBattery(CurrentMinigameLevel);
+			}
 
+			//풍선 비활성화 후 풀에 넣기
+			Balloon->AddToRoot();
+			Balloon->DeactivateToSave();
+			BalloonQueue.Enqueue(Balloon);
+
+			//ResetWeapon();
+		}
+		//풍선을 맞췄다면 풍선 카운트 증가
+		else
+		{
+			++CorrectBalloonNumber;
+
+			//풍선 비활성화 후 풀에 넣기
+			Balloon->AddToRoot();
+			Balloon->DeactivateToSave();
+			BalloonQueue.Enqueue(Balloon);
+			return;
+		}
+
+		//틀린 숫자 or 마지막 풍선을 맞췄다면 게임종료 
+		StopMinigame();
+		//다시 게임 시작
+		StartMinigame();
+		break;
+	}
 }
 
 void AMinigameManager::SetMinigame()
@@ -539,9 +713,39 @@ void AMinigameManager::SetMinigame()
 	if (IHPMinigameDataInterface* gs = Cast<IHPMinigameDataInterface>(GetWorld()->GetGameState()))
 	{
 		//미니게임 바꾸기
-		CurrentMinigame = (EMinigame)gs->GetCurrentDay();
+		CurrentMinigame = (EMinigame)(gs->GetCurrentDay()-1);
+		//무기 종류 바꾸기
+		SwapWeapon(CurrentMinigame);
 	}
 	
+	
+}
+
+void AMinigameManager::SwapWeapon(EMinigame Minigame)
+{
+	switch (Minigame)
+	{
+	case EMinigame::NumBalloon:
+	case EMinigame::ColorBalloon:
+	case EMinigame::BatBall:
+		if (CurrentWeapon->WeaponType != EWeaponType::Gun)
+		{
+			CurrentWeapon->SetActorHiddenInGame(true);
+			CurrentWeapon = AllWeapons[0];
+			CurrentWeapon->SetActorHiddenInGame(false);
+		}
+		break;
+	case EMinigame::DartBalloon:
+		if (CurrentWeapon->WeaponType != EWeaponType::Dart)
+		{
+			CurrentWeapon->SetActorHiddenInGame(true);
+			CurrentWeapon = GetWorld()->SpawnActor<AWeapon>(DartClass, GetActorLocation(), GetActorRotation());
+			CurrentWeapon->CatchWeaponDynamicMultiDelegate.AddDynamic(this, &AMinigameManager::OffSpawnWeaponTimer);
+			CurrentWeapon->PutWeaponDynamicMultiDelegate.AddDynamic(this, &AMinigameManager::OnSpawnWeaponTimer);
+		}
+		break;
+	}
+	ResetWeapon();
 }
 
 void AMinigameManager::RandomBalloonSpawnPoint(int32& ShowNumber)

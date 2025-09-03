@@ -52,11 +52,11 @@ public:
 	void DeactivateAllBalloon();
 	UFUNCTION()
 	void CheckCorrectBalloon(class ABalloon* Balloon);
-
-	
 protected:
 	UFUNCTION()
 	void SetMinigame();
+	//Day 마다 무기 변경을 위한 함수
+	void SwapWeapon(EMinigame Minigame);
 private:
 	//현재 미니게임 종류
 	EMinigame CurrentMinigame = EMinigame::NumBalloon;
@@ -70,6 +70,8 @@ private:
 	TArray<TObjectPtr<class AWeapon>> AllWeapons;
 	UPROPERTY()
 	TSubclassOf<class AWeapon> GunClass;
+	UPROPERTY()
+	TSubclassOf<class AWeapon> DartClass;
 
 	//Player가 총을 SpawnPoint에서 집은 후 놓았을 때,Spawn의 카운팅이 시작된다 - 다시 잡았을때 Spawn카운팅을 초기화시켜야할것같으므로 잡을때와 놓았을때의 델리게이트 -> 타이머
 	//무기 스폰 타임
@@ -110,6 +112,11 @@ private:
 	TArray<FSelectedColor*> SelectedColorData;
 	UPROPERTY()
 	UDataTable* SelectedColorDataTable;
+	/////////////////////////////////////////////////////////////////////////////DartBalloon
+	//DartBalloon 데이터
+	TArray<FNumBalloon*> DartBalloonData;
+	UPROPERTY()
+	UDataTable* DartBalloonDataTable;
 
 
 	///////////////////////////////////////////////////////////////////////////미니게임 공통으로 사용할 변수

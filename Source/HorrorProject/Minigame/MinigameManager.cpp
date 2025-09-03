@@ -121,6 +121,7 @@ void AMinigameManager::BeginPlay()
 	
 	if (IHPMinigameDataInterface* gs = Cast<IHPMinigameDataInterface>(GetWorld()->GetGameState()))
 	{
+		SetMinigame();
 		//다음날 변경시 미니게임 바꾸기
 		gs->BeginNextDayMultiDelegate.AddDynamic(this, &AMinigameManager::SetMinigame);
 	}
@@ -197,11 +198,12 @@ void AMinigameManager::OffSpawnWeaponTimer()
 	//다트를 들었을때 게임중이 아니라면 게임 시작
 	else if (CurrentWeapon->WeaponType == EWeaponType::Dart)
 	{
-		//Destroy 해제 -> 문제발생 댕글리포인터가 됨 ->드랍했을때 Destroy타이머를 작동하면 해결됨
+		//Todo : 잡은거 타이머 해제를 못함
+		//Destroy 해제 -> 문제발생 댕글리포인터가 됨 //->드랍했을때 Destroy타이머를 작동하면 해결됨
 		GetWorld()->GetTimerManager().ClearTimer(CurrentWeapon->SpawnWeaponHandle);
 		//미니 게임 종료 타이머 해제
 		GetWorld()->GetTimerManager().ClearTimer(SpawnWeaponHandle);
-		if(UsingBalloons.Num()==0)
+		if(UsingBalloons.IsEmpty())
 			StartMinigame();
 	}
 }
@@ -713,7 +715,7 @@ void AMinigameManager::SetMinigame()
 	if (IHPMinigameDataInterface* gs = Cast<IHPMinigameDataInterface>(GetWorld()->GetGameState()))
 	{
 		//미니게임 바꾸기
-		CurrentMinigame = (EMinigame)(gs->GetCurrentDay()-1);
+		CurrentMinigame = EMinigame::DartBalloon;//(EMinigame)(gs->GetCurrentDay()-1);
 		//무기 종류 바꾸기
 		SwapWeapon(CurrentMinigame);
 	}

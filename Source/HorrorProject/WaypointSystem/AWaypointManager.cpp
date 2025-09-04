@@ -142,6 +142,11 @@ void AAWaypointManager::MoveWaypointTarget(int32 InWaypoint)
 	{
 		if (EnemyReachEndPointMutiDelegate.IsBound())
 		{
+			//시간 작동 중지
+			if (IHPMinigameDataInterface* gs = Cast<IHPMinigameDataInterface>(GetWorld()->GetGameState()))
+			{
+				gs->EndGame();
+			}
 			EnemyReachEndPointMutiDelegate.Broadcast();
 		}
 	}

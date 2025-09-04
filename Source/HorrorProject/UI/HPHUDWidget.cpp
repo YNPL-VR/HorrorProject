@@ -11,6 +11,7 @@
 #include "EngineUtils.h"
 #include "WaypointSystem/AWaypointManager.h"
 
+//NativeOnConstruct
 void UHPHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -76,6 +77,15 @@ void UHPHUDWidget::SetTime()
 		FString TimeStr = "Time : ";
 		TimeStr += TimeStrArray[gs->GetMinigameLevel()];
 		TxtTime->SetText(FText::FromString(TimeStr));
+
+		if (gs->GetCurrentDay()!=LASTDAY && gs->GetMinigameLevel() == TimeStrArray.Num() - 1)
+		{
+			FString DayStr = "Day ";
+			DayStr += FString::FromInt(gs->GetCurrentDay()+1);
+			DayToDayTxt->SetText(FText::FromString(DayStr));
+			//페이드 인 페이드 아웃 애니메이션 실행
+			PlayAnimation(DayToDay);
+		}
 	}
 }
 
@@ -107,11 +117,11 @@ void UHPHUDWidget::SetDefaultTimeAndCurrentDay()
 		FString DayStr = "Day ";
 		DayStr += FString::FromInt(gs->GetCurrentDay());
 		TxtDay->SetText(FText::FromString(DayStr));
+		
 
 		//시간 초기화
 		FString TimeStr = "Time : ";
 		TimeStr += TimeStrArray[gs->GetMinigameLevel()];
 		TxtTime->SetText(FText::FromString(TimeStr));
-	
 	}
 }

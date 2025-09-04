@@ -8,7 +8,7 @@
 #include "HPMinigameDataInterface.generated.h"
 
 // This class does not need to be modified.
-UINTERFACE(MinimalAPI)
+UINTERFACE(MinimalAPI, Blueprintable)
 class UHPMinigameDataInterface : public UInterface
 {
 	GENERATED_BODY()
@@ -20,6 +20,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FBeginNextDayMultiDelegate);
 /**
  * 
  */
+
 class HORRORPROJECT_API IHPMinigameDataInterface
 {
 	GENERATED_BODY()
@@ -40,6 +41,8 @@ public:
 	*/
 	UFUNCTION()
 	virtual int32 GetCurrentDay()=0;
+	UFUNCTION()
+	virtual void EndGame() = 0;
 
 	//다음날을 알림
 	FBeginNextDayMultiDelegate BeginNextDayMultiDelegate;

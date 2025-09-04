@@ -45,6 +45,8 @@ public:
 	int32 GetCurrentDay() override;
 	
 	float GetLevelUpSecondTimer(int32 InMinigameLevel) override;
+	UFUNCTION()
+	virtual void EndGame() override;
 	/* Player에서 Battery테이블 가져오는 것으로 수정 - Player만 Battery정보를 쓰므로
 	float GetConsumeAlarmBattery(int32 InMinigameLevel) override;
 	float GetChargeBattery(int32 InMinigameLevel) override;
@@ -54,6 +56,8 @@ public:
 	void TimeToNextLevel();
 	UFUNCTION()
 	void SetNextDay();
+	UFUNCTION(BlueprintCallable)
+	bool IsEndGame() { return bEndGame; }
 protected:
 	//다음날로 설정
 	void ToNextDay();
@@ -72,5 +76,6 @@ private:
 
 	//다음 레벨업을 알려줄 타이머핸들
 	FTimerHandle NextLevelTimerHandle;
-
+	//게임이 끝났는지 확인하는 변수
+	bool bEndGame;
 };

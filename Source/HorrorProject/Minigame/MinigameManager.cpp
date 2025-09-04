@@ -11,6 +11,7 @@
 #include "Player/HPPawn.h"
 #include "Kismet/GameplayStatics.h"
 #include "Actor/ColorDisplayActor.h"
+#include <Components/BoxComponent.h>
 
 #define MAXBALLOON 20
 
@@ -36,7 +37,16 @@ AMinigameManager::AMinigameManager()
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("GunClass를 찾을 수 없습니다."));
+		UE_LOG(LogTemp, Error, TEXT("DartClass를 찾을 수 없습니다."));
+	}
+	static ConstructorHelpers::FClassFinder<AWeapon> BatClassFinder(TEXT("/Game/LSJ/Blueprint/BP_Bat.BP_Bat_C"));
+	if (BatClassFinder.Succeeded())
+	{
+		BatClass = BatClassFinder.Class;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("BatClass를 찾을 수 없습니다."));
 	}
 
 	//NumberBalloon DataTable 초기화
@@ -63,6 +73,11 @@ AMinigameManager::AMinigameManager()
 	{
 		DartBalloonDataTable = DartBalloonDataTableFinder.Object;
 	}
+	static ConstructorHelpers::FObjectFinder<UDataTable> BatBalloonDataTableFinder(TEXT("/Script/Engine.DataTable'/Game/Datatable/BatBalloon.BatBalloon'"));
+	if (BatBalloonDataTableFinder.Succeeded())
+	{
+		BatBalloonDataTable = BatBalloonDataTableFinder.Object;
+	}
 }
 
 // Called when the game starts or when spawned
@@ -76,14 +91,28 @@ void AMinigameManager::BeginPlay()
 	ColorBalloonDataTable->GetAllRows(ContextString, ColorBalloonData);
 	SelectedColorDataTable->GetAllRows(ContextString, SelectedColorData);
 	DartBalloonDataTable->GetAllRows(ContextString, DartBalloonData);
-	
+	BatBalloonDataTable->GetAllRows(ContextString, BatBalloonData);
+
+	//총 무기 스폰
 	CurrentWeapon = GetWorld()->SpawnActor<AWeapon>(GunClass, GetActorLocation(), GetActorRotation());
 	if(nullptr!=CurrentWeapon)
 	{
+		//안보이는 경우 충돌방지
+		USkeletalMeshComponent* FoundMesh = CurrentWeapon->FindComponentByClass<USkeletalMeshComponent>();
+		if (FoundMesh)
+		{
+			FoundMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECollisionResponse::ECR_Ignore);
+		}
 		CurrentWeapon->CatchWeaponDynamicMultiDelegate.AddDynamic(this, &AMinigameManager::OffSpawnWeaponTimer);
 		CurrentWeapon->PutWeaponDynamicMultiDelegate.AddDynamic(this, &AMinigameManager::OnSpawnWeaponTimer);
 		AllWeapons.Add(CurrentWeapon);
-		AllWeapons.Add(GetWorld()->SpawnActor<AWeapon>(DartClass, GetActorLocation(), GetActorRotation()));
+		CurrentWeapon->SetActorHiddenInGame(true);
+		//배트 무기 스폰
+		CurrentWeapon = GetWorld()->SpawnActor<AWeapon>(BatClass, GetActorLocation(), GetActorRotation());
+		CurrentWeapon->CatchWeaponDynamicMultiDelegate.AddDynamic(this, &AMinigameManager::OffSpawnWeaponTimer);
+		CurrentWeapon->PutWeaponDynamicMultiDelegate.AddDynamic(this, &AMinigameManager::OnSpawnWeaponTimer);
+		AllWeapons.Add(CurrentWeapon);
+		CurrentWeapon->SetActorHiddenInGame(true);
 	}
 
 	UWorld* World = GetWorld();
@@ -121,7 +150,11 @@ void AMinigameManager::BeginPlay()
 	
 	if (IHPMinigameDataInterface* gs = Cast<IHPMinigameDataInterface>(GetWorld()->GetGameState()))
 	{
-		SetMinigame();
+		//Todo : Bat 테스트중
+		CurrentMinigame = EMinigame::BatBall;//static_cast<EMinigame>(gs->GetCurrentDay() - 1);
+		SwapWeapon(CurrentMinigame);
+
+		//SwapWeapon(static_cast<EMinigame>(gs->GetCurrentDay() - 1));
 		//다음날 변경시 미니게임 바꾸기
 		gs->BeginNextDayMultiDelegate.AddDynamic(this, &AMinigameManager::SetMinigame);
 	}
@@ -162,7 +195,7 @@ void AMinigameManager::OnSpawnWeaponTimer()
 	//무기가 존재하지 않으면 리턴
 	if (AllWeapons.Num() < 1)
 		return;
-	if (CurrentMinigame==EMinigame::NumBalloon && CurrentWeapon->WeaponType == EWeaponType::Gun)
+	if ((CurrentMinigame==EMinigame::NumBalloon && CurrentWeapon->WeaponType == EWeaponType::Gun) || (CurrentMinigame == EMinigame::BatBall && CurrentWeapon->WeaponType == EWeaponType::Bat))
 	{
 		//미니게임 강제종료
 		StopMinigame();
@@ -183,24 +216,23 @@ void AMinigameManager::OnSpawnWeaponTimer()
 }
 //Todo : 플레이어에서 해야하지 않을까?
 //무기를 들었을때 실행되는 함수
-void AMinigameManager::OffSpawnWeaponTimer()
+void AMinigameManager::OffSpawnWeaponTimer(AWeapon* Weapon)
 {
 	//무기가 존재하지 않으면 리턴
 	if (AllWeapons.Num() < 1)
 		return;
 	//총이라면 들었을때 게임시작
-	if (CurrentWeapon->WeaponType == EWeaponType::Gun)
+	if (Weapon->WeaponType == EWeaponType::Gun || Weapon->WeaponType == EWeaponType::Bat)
 	{
 		GetWorld()->GetTimerManager().ClearTimer(SpawnWeaponHandle);
 		//미니게임 시작
 		StartMinigame();
 	}
 	//다트를 들었을때 게임중이 아니라면 게임 시작
-	else if (CurrentWeapon->WeaponType == EWeaponType::Dart)
+	else if (Weapon->WeaponType == EWeaponType::Dart)
 	{
-		//Todo : 잡은거 타이머 해제를 못함
 		//Destroy 해제 -> 문제발생 댕글리포인터가 됨 //->드랍했을때 Destroy타이머를 작동하면 해결됨
-		GetWorld()->GetTimerManager().ClearTimer(CurrentWeapon->SpawnWeaponHandle);
+		GetWorld()->GetTimerManager().ClearTimer(Weapon->SpawnWeaponHandle);
 		//미니 게임 종료 타이머 해제
 		GetWorld()->GetTimerManager().ClearTimer(SpawnWeaponHandle);
 		if(UsingBalloons.IsEmpty())
@@ -210,14 +242,11 @@ void AMinigameManager::OffSpawnWeaponTimer()
 //Todo : 무기마다 리셋 설정 다를 예정
 void AMinigameManager::ResetWeapon()
 {
-	if (nullptr == CurrentWeapon)
-		return;
 	if (CurrentWeapon->WeaponType == EWeaponType::Gun)
 	{
 		USkeletalMeshComponent* FoundMesh = CurrentWeapon->FindComponentByClass<USkeletalMeshComponent>();
 		if (FoundMesh)
 		{
-			GetWorld()->GetTimerManager().ClearTimer(SpawnWeaponHandle);
 			FoundMesh->SetSimulatePhysics(false);
 			CurrentWeapon->SetActorLocationAndRotation(GetActorLocation(), GetActorRotation());
 			FoundMesh->SetSimulatePhysics(true);
@@ -226,6 +255,16 @@ void AMinigameManager::ResetWeapon()
 	else if (CurrentWeapon->WeaponType == EWeaponType::Dart)
 	{
 		CurrentWeapon->SetActorLocationAndRotation(GetActorLocation(), GetActorRotation());
+	}
+	else if (CurrentWeapon->WeaponType == EWeaponType::Bat)
+	{
+		UBoxComponent* FoundBox = CurrentWeapon->FindComponentByClass<UBoxComponent>();
+		if (FoundBox)
+		{
+			FoundBox->SetSimulatePhysics(false);
+			CurrentWeapon->SetActorLocationAndRotation(GetActorLocation(), GetActorRotation());
+			FoundBox->SetSimulatePhysics(true);
+		}
 	}
 	//현재 다트를 10초뒤에 제거하고
 	//다트를 무기 스폰 위치에 새로 스폰하여 CurrentWeapon 초기화
@@ -258,8 +297,7 @@ void AMinigameManager::StartMinigame()
 	if (gs)
 	{
 		CurrentMinigameLevel = gs->GetMinigameLevel();
-		//CurrentMinigame = EMinigame::DartBalloon; //= static_cast<EMinigame>(gs->GetCurrentDay());
-	
+
 	}
 
 	switch (CurrentMinigame)
@@ -540,7 +578,73 @@ void AMinigameManager::StartMinigame()
 
 		break;
 	}
+	case EMinigame::BatBall:
+	{
+		//난이도가 데이터베이스의 항목보다 많다면 //예외처리
+		if (BatBalloonData.Num() - 1 < CurrentMinigameLevel)
+		{
+			UE_LOG(LogTemp, Error, TEXT("MinigameBalloonData.Num() - 1 < currentMinigameLevel"));
+			CurrentMinigameLevel = BatBalloonData.Num() - 1;
+		}
+		//풍선을 맞췄을때 시작 숫자
+		CorrectBalloonNumber = 1;
+		//레벨에 맞춰서 데이터 테이블에서 정보 가져오기
+		BalloonNum = BatBalloonData[CurrentMinigameLevel]->BalloonNum;
+		BalloonSpeed = BatBalloonData[CurrentMinigameLevel]->BalloonSpeed;
+		LineRandomInterval = BatBalloonData[CurrentMinigameLevel]->LineRandomInterval;
+		{
+			//풍선 수만큼 생성
+			int32 Count = 0;
+			while (BalloonNum > Count)
+			{
+				//랜덤 스폰위치 결정
+				//n번째 마다 BalloonSpawnPoints의 정보 갱신
+				if (Count % BalloonSpawnPoints.Num() == 0)
+				{
+					//랜덤으로 순서 섞기
+					for (int32 BalloonPointCount = BalloonSpawnPoints.Num() - 1; BalloonPointCount > 0; --BalloonPointCount)
+					{
+						int32 RandIdx = FMath::RandRange(0, BalloonSpawnPoints.Num() - 1);
+						BalloonSpawnPoints.Swap(BalloonPointCount, RandIdx);
+					}
+				}
+				//속도로 풍선 길이만큼 지난 시간 예측하고 생성 - 풍선이 전부 같은 속도이므로 랜덤시간 + 속도로 풍선 길이만큼 지난 시간
+				for (const auto& BalloonSpawner : BalloonSpawnPoints)
+				{
+					// 총 스폰한 수가 최대치를 넘지 않게 만듬
+					if (BalloonNum <= Count)
+					{
+						return;
+					}
 
+					//큐에서 풍선 꺼내기
+					ABalloon* Balloon;
+					BalloonQueue.Dequeue(Balloon);
+
+					//사용중인 목록에 추가
+					UsingBalloons.Add(Balloon);
+					//풍선의 높이 길이
+					int ZSize = Balloon->GetActorMesh()->GetBounds().GetBox().GetSize().Z;
+					//속도로 풍선 길이만큼 지나는 예측 시간 
+					float WaitTime = (ZSize / 2) / BalloonSpeed;
+					float RandomInterVal = FMath::RandRange(0.0f, LineRandomInterval);
+					//누적해야한다. 이전 스폰 시간을 가져와서 현재 스폰시간에 더해준다.
+					float CurrentBalloonSpawnTime = BalloonSpawner->PreviousSpawnTime + WaitTime + RandomInterVal;
+					BalloonSpawner->PreviousSpawnTime = CurrentBalloonSpawnTime;
+					//풍선 스폰 타이머
+					GetWorld()->GetTimerManager().SetTimer(Balloon->SpawnTimerHandle,
+						[this, BalloonSpawner, Balloon, BalloonSpeed]()
+						{ //BalloonSpawner->GetActorRotation()
+							SpawnBalloon(BalloonSpawner->GetActorLocation(), FRotator(0,90,0), BalloonSpeed,
+								BalloonSpawner->ScreenBalloonNumber, Balloon);
+						}, CurrentBalloonSpawnTime, false);
+					++Count;
+				}
+			}
+		}
+
+		break;
+	}
 	}
 
 	
@@ -710,43 +814,77 @@ void AMinigameManager::CheckCorrectBalloon(class ABalloon* Balloon)
 
 void AMinigameManager::SetMinigame()
 {
+	//무기 스폰 클리어
+	GetWorld()->GetTimerManager().ClearTimer(SpawnWeaponHandle);
 	//진행중인 게임 중단
 	StopMinigame();
 	if (IHPMinigameDataInterface* gs = Cast<IHPMinigameDataInterface>(GetWorld()->GetGameState()))
 	{
-		//미니게임 바꾸기
-		CurrentMinigame = EMinigame::DartBalloon;//(EMinigame)(gs->GetCurrentDay()-1);
 		//무기 종류 바꾸기
+		CurrentMinigame = static_cast<EMinigame>(gs->GetCurrentDay() - 1);
 		SwapWeapon(CurrentMinigame);
 	}
-	
-	
 }
 
 void AMinigameManager::SwapWeapon(EMinigame Minigame)
 {
+	USkeletalMeshComponent* FoundMesh = AllWeapons[0]->FindComponentByClass<USkeletalMeshComponent>();
+	UBoxComponent* FoundBox = AllWeapons[1]->FindComponentByClass<UBoxComponent>();
+	//CurrentWeapon이 다트일때 제거되므로 스왑할때 문제가 됨 -> CurrentWeapon을 쓰지 않고 직접 무기 지정
 	switch (Minigame)
 	{
 	case EMinigame::NumBalloon:
 	case EMinigame::ColorBalloon:
-	case EMinigame::BatBall:
-		if (CurrentWeapon->WeaponType != EWeaponType::Gun)
+		//다른 무기 충돌 안되게 만들기
+		
+		if (FoundBox)
 		{
-			CurrentWeapon->SetActorHiddenInGame(true);
-			CurrentWeapon = AllWeapons[0];
-			CurrentWeapon->SetActorHiddenInGame(false);
+			FoundBox->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECollisionResponse::ECR_Ignore);
 		}
+		AllWeapons[1]->SetActorHiddenInGame(true);
+		//보이는 경우 충돌가능
+		
+		if (FoundMesh)
+		{
+			FoundMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECollisionResponse::ECR_Block);
+		}
+		AllWeapons[0]->SetActorHiddenInGame(false);
+		CurrentWeapon = AllWeapons[0];
 		break;
 	case EMinigame::DartBalloon:
-		if (CurrentWeapon->WeaponType != EWeaponType::Dart)
+		//다른 무기 충돌 안되게 만들기
+		if (FoundMesh)
 		{
-			CurrentWeapon->SetActorHiddenInGame(true);
-			CurrentWeapon = GetWorld()->SpawnActor<AWeapon>(DartClass, GetActorLocation(), GetActorRotation());
-			CurrentWeapon->CatchWeaponDynamicMultiDelegate.AddDynamic(this, &AMinigameManager::OffSpawnWeaponTimer);
-			CurrentWeapon->PutWeaponDynamicMultiDelegate.AddDynamic(this, &AMinigameManager::OnSpawnWeaponTimer);
+			FoundMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECollisionResponse::ECR_Ignore);
 		}
+		AllWeapons[0]->SetActorHiddenInGame(true);
+		if (FoundBox)
+		{
+			FoundBox->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECollisionResponse::ECR_Ignore);
+		}
+		AllWeapons[1]->SetActorHiddenInGame(true);
+
+		CurrentWeapon = GetWorld()->SpawnActor<AWeapon>(DartClass, GetActorLocation(), GetActorRotation());
+		CurrentWeapon->CatchWeaponDynamicMultiDelegate.AddDynamic(this, &AMinigameManager::OffSpawnWeaponTimer);
+		CurrentWeapon->PutWeaponDynamicMultiDelegate.AddDynamic(this, &AMinigameManager::OnSpawnWeaponTimer);
 		break;
+	case EMinigame::BatBall:
+		//다른 무기 충돌 안되게 만들기
+		if (FoundMesh)
+		{
+			FoundMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECollisionResponse::ECR_Ignore);
+		}
+		AllWeapons[0]->SetActorHiddenInGame(true);
+		//보이는 경우 충돌가능
+		if (FoundBox)
+		{
+			FoundBox->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECollisionResponse::ECR_Block);
+		}
+		AllWeapons[1]->SetActorHiddenInGame(false);
+		CurrentWeapon = AllWeapons[1];
+		break;	
 	}
+
 	ResetWeapon();
 }
 

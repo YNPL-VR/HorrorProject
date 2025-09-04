@@ -5,15 +5,16 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Weapon.generated.h"
-//Todo : 잡은 오브젝트가 무엇인지 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FCatchWeaponDynamicMultiDelegate);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCatchWeaponDynamicMultiDelegate, AWeapon*, Weapon);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPutWeaponDynamicMultiDelegate);
 
 UENUM(BlueprintType)
 enum class EWeaponType : uint8
 {
 	Gun,
-	Dart
+	Dart,
+	Bat
 };
 
 UCLASS()

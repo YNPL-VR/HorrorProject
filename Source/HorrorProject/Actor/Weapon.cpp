@@ -38,7 +38,7 @@ void AWeapon::CatchWeapon()
 {
 	if (CatchWeaponDynamicMultiDelegate.IsBound())
 	{
-		CatchWeaponDynamicMultiDelegate.Broadcast();
+		CatchWeaponDynamicMultiDelegate.Broadcast(this);
 	}
 	
 }
@@ -50,4 +50,3 @@ void AWeapon::PutWeapon()
 		PutWeaponDynamicMultiDelegate.Broadcast();
 	}
 }
-

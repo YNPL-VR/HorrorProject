@@ -38,6 +38,10 @@ protected:
 	class UTextBlock* TxtTime;
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	class UTextBlock* TxtDay;
+	UPROPERTY(BlueprintReadWrite, Transient, meta = (BindWidget))
+	class UTextBlock* DayToDayTxt;
+	UPROPERTY(BlueprintReadOnly, Transient, meta = (BindWidgetAnim))
+	class UWidgetAnimation* DayToDay;
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	class UTextBlock* TxtSuccessMsg;
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))

@@ -99,7 +99,7 @@ void ABalloon::Tick(float DeltaTime)
 	const float GravityForce = SphereComponent->GetMass() * 980.0f;
 	//위로 올라가는 힘
 	const FVector TotalForce = FVector(0.0f, 0.0f, GravityForce + ThrustForce);
-	SphereComponent->AddForce(TotalForce);
+	SphereComponent->AddForce(GetActorUpVector()* (GravityForce + ThrustForce));
 }
 
 void ABalloon::SetColor(FLinearColor InColor)
@@ -112,8 +112,8 @@ void ABalloon::ActivateToUse(FVector Location, FRotator Rotation, float Speed)
 {
 	ThrustForce = Speed;
 	SetActorLocation(Location);
-	SetActorRotation(Rotation);
 	SetActorHiddenInGame(false);
+	SetActorRotation(Rotation);
 	SphereComponent->SetCollisionProfileName(FName("Balloon"));
 	SetActorTickEnabled(true);
 	SphereComponent->SetSimulatePhysics(true);
@@ -158,8 +158,7 @@ void ABalloon::SetNumberWidgetVisible(bool bVisible)
 
 void ABalloon::OnComponentHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	//Todo : 충돌이 풍선과 안되는 경우가 있다 집에서 테스트 해봐야함
-	//아마 sphere 콜리전이 없어서 또는 속도가 너무 빨라서
+	//Todo : 해결 - 충돌이 풍선과 안되는 경우가 있다 sphere 콜리전이 없어서
 	//충돌 알림
 	if (OtherActor->ActorHasTag(FName("Weapon")) && HitBalloonWithWeapon.IsBound())
 	{

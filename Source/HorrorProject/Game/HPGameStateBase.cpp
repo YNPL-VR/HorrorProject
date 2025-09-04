@@ -87,6 +87,10 @@ float AHPGameStateBase::GetLevelUpSecondTimer(int32 InMinigameLevel)
 {
 	return MinigameLevelDesignData[InMinigameLevel]->LevelUpSecondTimer;
 }
+void AHPGameStateBase::EndGame()
+{
+	GetWorld()->GetTimerManager().ClearTimer(NextLevelTimerHandle);
+}
 /* Player에서 Battery테이블 가져오는 것으로 수정 - Player만 Battery정보를 쓰므로
 float AHPGameStateBase::GetConsumeAlarmBattery(int32 InMinigameLevel)
 {
@@ -132,7 +136,7 @@ void AHPGameStateBase::TimeToNextLevel()
 
 		//n초 뒤에 표시
 		FTimerHandle EndDayTimer;
-		GetWorld()->GetTimerManager().SetTimer(EndDayTimer, this, &AHPGameStateBase::SetNextDay, 3.0f);
+		GetWorld()->GetTimerManager().SetTimer(EndDayTimer, this, &AHPGameStateBase::SetNextDay, 1.5f);
 	}
 	
 }

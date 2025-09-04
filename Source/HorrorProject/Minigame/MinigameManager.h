@@ -41,7 +41,7 @@ public:
 	UFUNCTION()
 	void OnSpawnWeaponTimer();
 	UFUNCTION()
-	void OffSpawnWeaponTimer();
+	void OffSpawnWeaponTimer(AWeapon* Weapon);
 	void ResetWeapon();
 
 	UFUNCTION()
@@ -117,8 +117,13 @@ private:
 	TArray<FNumBalloon*> DartBalloonData;
 	UPROPERTY()
 	UDataTable* DartBalloonDataTable;
-
-
+	/////////////////////////////////////////////////////////////////////////////DartBalloon
+	TArray<FNumBalloon*> BatBalloonData;
+	UPROPERTY()
+	UDataTable* BatBalloonDataTable;
+	
+	UPROPERTY()
+	TSubclassOf<class AWeapon> BatClass;
 	///////////////////////////////////////////////////////////////////////////미니게임 공통으로 사용할 변수
 	//맟출 풍선 순서
 	TArray<int32> MatchingBalloonOrder;

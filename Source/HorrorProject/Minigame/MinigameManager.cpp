@@ -102,6 +102,7 @@ void AMinigameManager::BeginPlay()
 		if (FoundMesh)
 		{
 			FoundMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECollisionResponse::ECR_Ignore);
+			FoundMesh->SetCollisionObjectType(ECC_GameTraceChannel4);
 		}
 		CurrentWeapon->CatchWeaponDynamicMultiDelegate.AddDynamic(this, &AMinigameManager::OffSpawnWeaponTimer);
 		CurrentWeapon->PutWeaponDynamicMultiDelegate.AddDynamic(this, &AMinigameManager::OnSpawnWeaponTimer);
@@ -109,6 +110,12 @@ void AMinigameManager::BeginPlay()
 		CurrentWeapon->SetActorHiddenInGame(true);
 		//배트 무기 스폰
 		CurrentWeapon = GetWorld()->SpawnActor<AWeapon>(BatClass, GetActorLocation(), GetActorRotation());
+		UBoxComponent* FoundBox = CurrentWeapon->FindComponentByClass<UBoxComponent>();
+		if (FoundBox)
+		{
+			FoundBox->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECollisionResponse::ECR_Ignore);
+			FoundBox->SetCollisionObjectType(ECC_GameTraceChannel4);
+		}
 		CurrentWeapon->CatchWeaponDynamicMultiDelegate.AddDynamic(this, &AMinigameManager::OffSpawnWeaponTimer);
 		CurrentWeapon->PutWeaponDynamicMultiDelegate.AddDynamic(this, &AMinigameManager::OnSpawnWeaponTimer);
 		AllWeapons.Add(CurrentWeapon);
@@ -151,7 +158,7 @@ void AMinigameManager::BeginPlay()
 	if (IHPMinigameDataInterface* gs = Cast<IHPMinigameDataInterface>(GetWorld()->GetGameState()))
 	{
 		//Todo : Bat 테스트중
-		CurrentMinigame = EMinigame::BatBall;//static_cast<EMinigame>(gs->GetCurrentDay() - 1);
+		CurrentMinigame = EMinigame::DartBalloon;//static_cast<EMinigame>(gs->GetCurrentDay() - 1);
 		SwapWeapon(CurrentMinigame);
 
 		//SwapWeapon(static_cast<EMinigame>(gs->GetCurrentDay() - 1));
@@ -843,7 +850,6 @@ void AMinigameManager::SwapWeapon(EMinigame Minigame)
 		}
 		AllWeapons[1]->SetActorHiddenInGame(true);
 		//보이는 경우 충돌가능
-		
 		if (FoundMesh)
 		{
 			FoundMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECollisionResponse::ECR_Block);
@@ -865,6 +871,14 @@ void AMinigameManager::SwapWeapon(EMinigame Minigame)
 		AllWeapons[1]->SetActorHiddenInGame(true);
 
 		CurrentWeapon = GetWorld()->SpawnActor<AWeapon>(DartClass, GetActorLocation(), GetActorRotation());
+		FoundBox = CurrentWeapon->FindComponentByClass<UBoxComponent>();
+		if (FoundBox)
+		{
+			FoundBox->SetCollisionResponseToChannel(ECC_Visibility,ECR_Ignore);
+			FoundBox->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+			FoundBox->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Ignore);
+		
+		}
 		CurrentWeapon->CatchWeaponDynamicMultiDelegate.AddDynamic(this, &AMinigameManager::OffSpawnWeaponTimer);
 		CurrentWeapon->PutWeaponDynamicMultiDelegate.AddDynamic(this, &AMinigameManager::OnSpawnWeaponTimer);
 		break;

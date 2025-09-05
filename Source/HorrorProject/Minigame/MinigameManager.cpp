@@ -12,6 +12,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Actor/ColorDisplayActor.h"
 #include <Components/BoxComponent.h>
+#include <GameFramework/ProjectileMovementComponent.h>
 
 #define MAXBALLOON 20
 
@@ -158,7 +159,7 @@ void AMinigameManager::BeginPlay()
 	if (IHPMinigameDataInterface* gs = Cast<IHPMinigameDataInterface>(GetWorld()->GetGameState()))
 	{
 		//Todo : Bat 테스트중
-		CurrentMinigame = EMinigame::DartBalloon;//static_cast<EMinigame>(gs->GetCurrentDay() - 1);
+		CurrentMinigame = EMinigame::BatBall;//static_cast<EMinigame>(gs->GetCurrentDay() - 1);
 		SwapWeapon(CurrentMinigame);
 
 		//SwapWeapon(static_cast<EMinigame>(gs->GetCurrentDay() - 1));
@@ -194,6 +195,9 @@ void AMinigameManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void AMinigameManager::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+
+	
 
 }
 //무기를 드랍했을때 실행되는 함수
@@ -641,9 +645,28 @@ void AMinigameManager::StartMinigame()
 					//풍선 스폰 타이머
 					GetWorld()->GetTimerManager().SetTimer(Balloon->SpawnTimerHandle,
 						[this, BalloonSpawner, Balloon, BalloonSpeed]()
-						{ //BalloonSpawner->GetActorRotation()
-							SpawnBalloon(BalloonSpawner->GetActorLocation(), FRotator(0,90,0), BalloonSpeed,
-								BalloonSpawner->ScreenBalloonNumber, Balloon);
+						{ //BalloonSpawner->GetActorRotation() //플레이어를 향하게 
+							//y와z축만 반영
+							//플레이어의 위치 - 풍선의 위치 = 플레이어를 가르키는 벡터
+							//해당 벡터의 방향으로 
+							APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+							if (PlayerPawn)
+							{
+								FVector PlayerPos = PlayerPawn->GetActorLocation();
+								FVector BalloonPos = BalloonSpawner->GetActorLocation();
+								FVector Direction = PlayerPos - BalloonPos;
+								Direction.Z = 0;
+								BalloonPos.Z = 0;
+								FVector PerpendicularVector = Direction ^ BalloonPos;
+								FVector PerpendicularDirection = PerpendicularVector.GetSafeNormal();
+
+								FVector ToBackDirection = BalloonSpawner->GetActorForwardVector() * -1.f;
+								ToBackDirection.Z = PlayerPawn->GetActorLocation().Z;
+								//FRotationMatrix::MakeFromZX(PerpendicularVector, Direction).Rotator()
+								SpawnBalloon(BalloonSpawner->GetActorLocation(), BalloonSpawner->GetActorRotation(), BalloonSpeed,
+									BalloonSpawner->ScreenBalloonNumber, Balloon);
+							}
+					
 						}, CurrentBalloonSpawnTime, false);
 					++Count;
 				}

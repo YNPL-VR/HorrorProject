@@ -59,6 +59,7 @@ protected:
 	void SwapWeapon(EMinigame Minigame);
 private:
 	//현재 미니게임 종류
+	UPROPERTY(VisibleAnywhere)
 	EMinigame CurrentMinigame = EMinigame::NumBalloon;
 	//현재 미니게임 난이도
 	int32 CurrentMinigameLevel = 0;

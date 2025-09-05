@@ -7,7 +7,7 @@
 #include "Components/SphereComponent.h"
 #include "UI/BalloonWidget.h"
 #include <Kismet/GameplayStatics.h>
-#include "DrawDebugHelpers.h"
+
 // Sets default values
 ABalloon::ABalloon()
 {
@@ -95,25 +95,6 @@ void ABalloon::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void ABalloon::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	//Todo : Ç³¼± ¹æÇâ Å×½ºÆ®Áß
-	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
-	if (PlayerPawn)
-	{
-		FVector PlayerPos = PlayerPawn->GetActorLocation();
-		FVector BalloonPos = GetActorLocation();
-		FVector Direction = PlayerPos - BalloonPos;
-		FVector PerpendicularVector = PlayerPos ^ BalloonPos;
-		FVector PerpendicularDirection = PerpendicularVector.GetSafeNormal();
-		DrawDebugLine(GetWorld(), BalloonPos, PlayerPos, FColor::Red, false, 5.0f, 0, 10.0f);
-		DrawDebugLine(GetWorld(), BalloonPos, PerpendicularVector, FColor::Blue, false, 5.0f, 0, 10.0f);
-
-
-		const FVector WorldUp(0.0f, 0.0f, 1.0f);
-		FVector RightDirection = (Direction ^ WorldUp).GetSafeNormal();
-		FVector RelativeUpDirection = (Direction ^ RightDirection).GetSafeNormal();
-		DrawDebugLine(GetWorld(), BalloonPos, RelativeUpDirection, FColor::Yellow, false, 5.0f, 0, 10.0f);
-	}
 
 
 	//Áß·Â »ó¼â Èû

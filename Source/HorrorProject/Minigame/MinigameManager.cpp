@@ -13,7 +13,7 @@
 #include "Actor/ColorDisplayActor.h"
 #include <Components/BoxComponent.h>
 #include <GameFramework/ProjectileMovementComponent.h>
-
+#include "DrawDebugHelpers.h"
 #define MAXBALLOON 20
 
 // Sets default values
@@ -646,24 +646,27 @@ void AMinigameManager::StartMinigame()
 					GetWorld()->GetTimerManager().SetTimer(Balloon->SpawnTimerHandle,
 						[this, BalloonSpawner, Balloon, BalloonSpeed]()
 						{ //BalloonSpawner->GetActorRotation() //플레이어를 향하게 
-							//y와z축만 반영
-							//플레이어의 위치 - 풍선의 위치 = 플레이어를 가르키는 벡터
-							//해당 벡터의 방향으로 
 							APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
 							if (PlayerPawn)
 							{
-								FVector PlayerPos = PlayerPawn->GetActorLocation();
-								FVector BalloonPos = BalloonSpawner->GetActorLocation();
-								FVector Direction = PlayerPos - BalloonPos;
-								Direction.Z = 0;
-								BalloonPos.Z = 0;
-								FVector PerpendicularVector = Direction ^ BalloonPos;
-								FVector PerpendicularDirection = PerpendicularVector.GetSafeNormal();
+								// 풍선에서 플레이어까지 향하는 벡터(A)
+								FVector ToPlayer = PlayerPawn->GetActorLocation() - BalloonSpawner->GetActorLocation();
+								// A와 플레이어 오른쪽 벡터의 외적으로 평면의 법선을 구함
+								FVector RightDir = ToPlayer^ PlayerPawn->GetActorForwardVector();
+								RightDir.Normalize();
+								// 평면의 법선과 오른쪽 벡터의 외적으로 풍선이 이동할 방향을 구함
+								FVector MoveDir = RightDir ^ PlayerPawn->GetActorRightVector();
+								// 내적이 음수면 반대 방향 - 항상 한쪽 방향으로 가도록 강제
+								FVector Desired = PlayerPawn->GetActorForwardVector();
+								if ((MoveDir | Desired) > 0.f) 
+								{
+									MoveDir *= -1.f;
+								}
 
-								FVector ToBackDirection = BalloonSpawner->GetActorForwardVector() * -1.f;
-								ToBackDirection.Z = PlayerPawn->GetActorLocation().Z;
-								//FRotationMatrix::MakeFromZX(PerpendicularVector, Direction).Rotator()
-								SpawnBalloon(BalloonSpawner->GetActorLocation(), BalloonSpawner->GetActorRotation(), BalloonSpeed,
+								MoveDir.Normalize();
+
+								//DrawDebugLine(GetWorld(), BalloonSpawner->GetActorLocation(), BalloonSpawner->GetActorLocation() +(Normal*50), FColor::Red, false, 5.0f, 0, 10.0f);
+								SpawnBalloon(BalloonSpawner->GetActorLocation(), FRotationMatrix::MakeFromZX(MoveDir, RightDir).Rotator(), BalloonSpeed,
 									BalloonSpawner->ScreenBalloonNumber, Balloon);
 							}
 					
